@@ -25,6 +25,8 @@ class RoleInfoSchema(Base):
     id: DiscordId
     name: str
     color: str
+    position: int
+    administrator: bool
 
 
 class ChannelInfoSchema(Base):
