@@ -1,0 +1,28 @@
+name: nightcore
+
+networks:
+  nightcore-network:
+    name: nightcore-network
+    driver: bridge
+    external: true
+
+services:
+  nightcore-dashboard-backend:
+    image: nightcore-dashboard-backend:latest
+    container_name: nightcore-dashboard-backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: no
+    env_file:
+      - .env
+
+    volumes:
+      - ./src/:/app/src/
+      - ./main.py:/app/main.py
+
+    networks:
+      - nightcore-network
+
+    ports:
+      - "${API_PORT}:${API_PORT}"
