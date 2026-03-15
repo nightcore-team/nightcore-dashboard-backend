@@ -1,0 +1,45 @@
+"""Setup module for creating and configuring the FastAPI bot instance."""
+
+import uvicorn
+from fastapi import FastAPI
+
+from src.api.endpoints import router as api_router
+from src.core._global import config
+
+from .lifespan import lifespan
+
+
+def create_fastapi() -> FastAPI:
+    """Create and return an instance of the FastAPI application."""
+
+    app = FastAPI(title="Nightcore API", lifespan=lifespan)
+
+    app.include_router(api_router)
+
+    return app
+
+
+def create_api_server() -> uvicorn.Server:
+    """Create the uvicorn server for the FastAPI application."""
+
+    app = create_fastapi()
+
+    return uvicorn.Server(
+        uvicorn.Config(
+            app=app,
+            host=config.api.API_HOST,
+            port=config.api.API_PORT,
+        )
+    )
+
+
+async def run_fastapi(server: uvicorn.Server) -> None:
+    """Run the FastAPI application in the current event loop."""
+
+    await server.serve()
+
+
+def stop_fastapi(server: uvicorn.Server) -> None:
+    """Gracefully stop the FastAPI server."""
+
+    server.should_exit = True
