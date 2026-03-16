@@ -42,3 +42,7 @@ class GuildStateSchema(GuildInfoSchema):
 
     roles: list[RoleInfoSchema]
     channels: list[ChannelInfoSchema]
+
+
+class GuildAvailableConfigurations(Base):
+    """Schema for a guild with configurations list that available for user."""

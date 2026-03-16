@@ -3,6 +3,7 @@
 from functools import cached_property
 
 from src.api.config import Config as ApiConfig
+from src.infra.postgres.config import Config as PostgresConfig
 from src.infra.redis.config import Config as RedisConfig
 
 
@@ -16,6 +17,11 @@ class Config:
     def redis(self) -> RedisConfig:
         """Return the Redis configuration settings."""
         return RedisConfig()  # type: ignore
+
+    @cached_property
+    def postgres(self) -> PostgresConfig:
+        """Return the Redis configuration settings."""
+        return PostgresConfig()
 
 
 config = Config()
