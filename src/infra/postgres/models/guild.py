@@ -11,44 +11,57 @@ from src.infra.postgres.models._mixins import IdIntegerMixin
 from src.infra.postgres.models.base import Base
 
 
-class MainGuildConfig(IdIntegerMixin, Base):  #
-    """Main configuration for a guild."""
-
+class GuildFaqConfig(IdIntegerMixin, Base):
     guild_id: Mapped[int] = mapped_column(
         BigInteger, nullable=False, unique=True
     )
-    rules_channel_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
-    )  #
-    create_proposal_channel_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
-    )  #
-    proposals_count: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0
-    )
-    illegal_roles: Mapped[dict[str, dict[str, int]]] = mapped_column(
-        JSON, nullable=False, default=dict, server_default=text("'{}'::json")
-    )  #
-    organizational_roles: Mapped[dict[str, dict[str, int]]] = mapped_column(
-        JSON, nullable=False, default=dict
-    )  #
-    voice_temp_roles: Mapped[dict[int, int]] = mapped_column(
-        JSON, nullable=False, default=dict
-    )  #
     faq: Mapped[list[FAQPageAnnot]] = mapped_column(
         JSON,
         nullable=False,
         default=list,
         server_default=text("'[]'::json"),
     )
+
+
+class GuildOrgRolesConfig(IdIntegerMixin, Base):
+    guild_id: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, unique=True
+    )
+    illegal_roles: Mapped[dict[str, dict[str, int]]] = mapped_column(
+        JSON, nullable=False, default=dict, server_default=text("'{}'::json")
+    )
+    organizational_roles: Mapped[dict[str, dict[str, int]]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
     check_role_requests_channel_id: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True
+    )
+
+
+class GuildRulesConfig(IdIntegerMixin, Base):
+    guild_id: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, unique=True
     )
     guild_rules: Mapped["Rules"] = mapped_column(
         JSON,
         nullable=False,
         default=lambda: {"chapters": []},  # type: ignore
         server_default=text("'{\"chapters\": []}'::json"),
+    )
+    rules_channel_id: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True
+    )
+
+
+class GuildProposalConfig(IdIntegerMixin, Base):
+    guild_id: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, unique=True
+    )
+    create_proposal_channel_id: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True
+    )
+    proposals_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
     )
 
 
@@ -140,6 +153,24 @@ class GuildLevelsConfig(IdIntegerMixin, Base):  #
     level_notify_channel_id: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True
     )
+    bonus_access_roles_ids: Mapped[dict[int, int]] = mapped_column(
+        JSON, nullable=False, default=dict, server_default=text("'{}'::json")
+    )
+    level_roles: Mapped[dict[str, int]] = mapped_column(
+        JSON, nullable=False, default=dict, server_default=text("'{}'::json")
+    )
+    count_messages_type: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        default="channel_only",
+        server_default=text("'channel_only'"),
+    )  # all | channel_only
+
+
+class GuildMultiplersConfig(IdIntegerMixin, Base):
+    guild_id: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, unique=True
+    )
     base_exp_multiplier: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1
     )
@@ -158,21 +189,9 @@ class GuildLevelsConfig(IdIntegerMixin, Base):  #
     temp_battlepass_multiplier: Mapped[int | None] = mapped_column(
         Integer, nullable=True
     )
-    bonus_access_roles_ids: Mapped[dict[int, int]] = mapped_column(
-        JSON, nullable=False, default=dict, server_default=text("'{}'::json")
-    )
-    level_roles: Mapped[dict[str, int]] = mapped_column(
-        JSON, nullable=False, default=dict, server_default=text("'{}'::json")
-    )
-    count_messages_type: Mapped[str] = mapped_column(
-        String,
-        nullable=False,
-        default="channel_only",
-        server_default=text("'channel_only'"),
-    )  # all | channel_only
 
 
-class GuildClansConfig(IdIntegerMixin, Base):  # ---
+class GuildClansConfig(IdIntegerMixin, Base):
     """Clans configuration for a guild."""
 
     guild_id: Mapped[int] = mapped_column(
@@ -207,7 +226,7 @@ class GuildClansConfig(IdIntegerMixin, Base):  # ---
     )
 
 
-class GuildPrivateChannelsConfig(IdIntegerMixin, Base):  #
+class GuildPrivateChannelsConfig(IdIntegerMixin, Base):
     """Private channels configuration for a guild."""
 
     guild_id: Mapped[int] = mapped_column(
@@ -299,16 +318,6 @@ class GuildModerationConfig(IdIntegerMixin, Base):  #
     leader_access_rr_roles_ids: Mapped[list[int]] = mapped_column(
         ARRAY(BigInteger), nullable=False, default=list
     )  #
-    # embed_config_access_roles: Mapped[list[int] | None] = mapped_column(
-    #     ARRAY(BigInteger), nullable=True
-    # )
-
-
-# TODO: feature guild complaint config instead of hardcoded dict
-# class GuildComplaintConfig(IdIntegerMixin, Base):
-#     guild_id: Mapped[int] = mapped_column(
-#         BigInteger, nullable=False, unique=True
-#     )
 
 
 class GuildNotificationsConfig(IdIntegerMixin, Base):  #
@@ -371,4 +380,106 @@ class GuildInfomakerConfig(IdIntegerMixin, Base):
     )
     leaders_roles_logging_channel_id: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True
+    )
+
+
+class GuildForumConfig(IdIntegerMixin, Base):
+    """Forum configuration for a guild."""
+
+    guild_id: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, unique=True
+    )
+    section_id: Mapped[int] = mapped_column(
+        Integer, nullable=False, unique=True
+    )
+    channel_id: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, unique=True
+    )
+    role_id: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, unique=True
+    )
+
+
+class GuildAccessConfig(IdIntegerMixin, Base):
+    guild_id: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, unique=True
+    )
+
+    # Access to GuildFaqConfig
+    faq_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
+        ARRAY(BigInteger), nullable=True
+    )
+
+    # Access to GuildForumConfig
+    forum_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
+        ARRAY(BigInteger), nullable=True
+    )
+
+    # Access to GuildOrgRolesConfig
+    org_roles_config_access_roles_ids: Mapped[list[int] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
+    )
+
+    # Access to GuildProposalConfig
+    proposal_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
+        ARRAY(BigInteger), nullable=True
+    )
+
+    # Access to GuildRulesConfig
+    rules_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
+        ARRAY(BigInteger), nullable=True
+    )
+
+    # Access to GuildMultiplersConfig
+    multiplers_config_access_roles_ids: Mapped[list[int] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
+    )
+
+    # Access to GuildLoggingConfig
+    logging_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
+        ARRAY(BigInteger), nullable=True
+    )
+
+    # Access to GuildEconomyConfig
+    economy_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
+        ARRAY(BigInteger), nullable=True
+    )
+
+    # Access to GuildLevelsConfig
+    levels_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
+        ARRAY(BigInteger), nullable=True
+    )
+
+    # Access to GuildClansConfig
+    clans_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
+        ARRAY(BigInteger), nullable=True
+    )
+
+    # Access to GuildPrivateChannelsConfig
+    private_channels_config_access_roles_ids: Mapped[list[int] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
+    )
+
+    # Access to GuildModerationConfig
+    moderation_config_access_roles_ids: Mapped[list[int] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
+    )
+
+    # Access to GuildNotificationsConfig
+    notifications_config_access_roles_ids: Mapped[list[int] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
+    )
+
+    # Access to GuildTicketsConfig
+    tickets_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
+        ARRAY(BigInteger), nullable=True
+    )
+
+    # Access to GuildInfomakerConfig
+    infomaker_config_access_roles_ids: Mapped[list[int] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
+    )
+
+    component_builder_access_roles: Mapped[list[int] | None] = mapped_column(
+        ARRAY(BigInteger), nullable=True
     )
