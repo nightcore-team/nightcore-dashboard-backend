@@ -26,7 +26,6 @@ class ChannelCacheEntry:
 
 
 @dataclass(frozen=True, slots=True)
-class GuildStateSnapshot:
-    guild: GuildCacheEntry
-    roles: list[RoleCacheEntry]
-    channels: list[ChannelCacheEntry]
+class MemberCacheEntry:
+    id: str
+    roles: list[int]
