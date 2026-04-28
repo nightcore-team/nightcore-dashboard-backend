@@ -163,7 +163,7 @@ class GuildStateService:
         return True
 
     async def _validate_array(
-        self, guild_id: int, array: list[Any], expected_type: type[list[Any]]
+        self, guild_id: int, array: list[Any], expected_type: type[Any]
     ) -> bool:
 
         for value in array:
@@ -199,7 +199,7 @@ class GuildStateService:
             return await self._validate_array(
                 guild_id=guild_id,
                 array=value,  # pyright: ignore[reportUnknownArgumentType]
-                expected_type=expected_type,  # pyright: ignore[reportUnknownArgumentType]
+                expected_type=list_type,  # pyright: ignore[reportUnknownArgumentType]
             )
 
         if issubclass(expected_type, list):
