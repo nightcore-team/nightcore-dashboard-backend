@@ -1,7 +1,11 @@
 """API schemas."""
 
+from typing import Any
+
 from pydantic import BaseModel
 from pydantic_settings import SettingsConfigDict
+
+from src.infra.postgres.models._enums import ConfigTypeEnum
 
 from ..types import DiscordId
 
@@ -37,12 +41,6 @@ class ChannelInfoSchema(Base):
     type: str
 
 
-class GuildStateSchema(GuildInfoSchema):
-    """Schema for a guild with cached roles and channels."""
-
-    roles: list[RoleInfoSchema]
-    channels: list[ChannelInfoSchema]
-
-
-class GuildAvailableConfigurations(Base):
-    """Schema for a guild with configurations list that available for user."""
+class ConfigUpdateBody(Base):
+    config_type: ConfigTypeEnum
+    data: dict[str, Any]

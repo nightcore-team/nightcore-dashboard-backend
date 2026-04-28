@@ -3,42 +3,45 @@
 from fastapi import HTTPException, status
 from fastapi.routing import APIRouter
 
-from ..depends import GuildStateRepositoryDependency
-from ..schemas import ChannelInfoSchema, GuildInfoSchema, RoleInfoSchema
+from src.infra.postgres.models._enums import ConfigTypeEnum
+
+from ..dependencies import (
+    AccessServiceDependency,
+    GuildStateServiceDependency,
+    UserIdDependency,
+)
+from ..schemas import ChannelInfoSchema, RoleInfoSchema
+from ..schemas.guild import ConfigUpdateBody
 
 router = APIRouter(prefix="/guilds", tags=["Guild Endpoints"])
 
 
 @router.get(
-    "/", response_model=list[GuildInfoSchema], status_code=status.HTTP_200_OK
-)
-async def get_bot_guilds(
-    guild_state_repository: GuildStateRepositoryDependency,
-):
-    """Get a list of guilds the bot is in."""
-
-    return await guild_state_repository.get_guilds()
-
-
-@router.get(
-    "/{guild_id}",
-    response_model=GuildInfoSchema,
+    "/{guild_id}/available-configurations",
+    response_model=list[str],
     status_code=status.HTTP_200_OK,
 )
-async def get_guild_info(
+async def get_available_configurations(
     guild_id: int,
-    guild_state_repository: GuildStateRepositoryDependency,
+    user_id: UserIdDependency,
+    access_service: AccessServiceDependency,
+    guild_state_service: GuildStateServiceDependency,
 ):
-    """Get cached guild details, including roles and channels."""
+    """Returns a list of accessible guild configurations for the authenticated user."""  # noqa: E501
 
-    guild = await guild_state_repository.get_guild(str(guild_id))
-    if guild is None:
+    member = await guild_state_service.get_member(
+        guild_id=guild_id, user_id=user_id
+    )
+
+    if member is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Guild not found.",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not a member of this guild",
         )
 
-    return guild
+    return await access_service.get_available_configurations(
+        guild_id=guild_id, member=member
+    )
 
 
 @router.get(
@@ -48,18 +51,35 @@ async def get_guild_info(
 )
 async def get_guild_roles(
     guild_id: int,
-    guild_state_repository: GuildStateRepositoryDependency,
+    user_id: UserIdDependency,
+    access_service: AccessServiceDependency,
+    guild_state_service: GuildStateServiceDependency,
 ):
     """Get roles for a specific guild."""
 
-    guild = await guild_state_repository.get_guild(str(guild_id))
-    if guild is None:
+    member = await guild_state_service.get_member(
+        guild_id=guild_id, user_id=user_id
+    )
+
+    if member is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Guild not found.",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not a member of this guild",
         )
 
-    return await guild_state_repository.get_roles(str(guild_id))
+    available_configurations = (
+        await access_service.get_available_configurations(
+            guild_id=guild_id, member=member
+        )
+    )
+
+    if len(available_configurations) < 1:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must have access to at least one configuration to get guild roles",  # noqa: E501
+        )
+
+    return await guild_state_service.get_roles(guild_id)
 
 
 @router.get(
@@ -69,15 +89,112 @@ async def get_guild_roles(
 )
 async def get_guild_channels(
     guild_id: int,
-    guild_state_repository: GuildStateRepositoryDependency,
+    user_id: UserIdDependency,
+    access_service: AccessServiceDependency,
+    guild_state_service: GuildStateServiceDependency,
 ):
     """Get channels for a specific guild."""
 
-    guild = await guild_state_repository.get_guild(str(guild_id))
-    if guild is None:
+    member = await guild_state_service.get_member(
+        guild_id=guild_id, user_id=user_id
+    )
+
+    if member is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Guild not found.",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not a member of this guild",
         )
 
-    return await guild_state_repository.get_channels(str(guild_id))
+    available_configurations = (
+        await access_service.get_available_configurations(
+            guild_id=guild_id, member=member
+        )
+    )
+
+    if len(available_configurations) < 1:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must have access to at least one configuration to get guild channels",  # noqa: E501
+        )
+
+    return await guild_state_service.get_channels(guild_id)
+
+
+@router.get(
+    "/{guild_id}/configuration",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+    response_model_exclude={"id", "guild_id"},
+)
+async def get_guild_configuration(
+    guild_id: int,
+    config_type: ConfigTypeEnum,
+    user_id: UserIdDependency,
+    access_service: AccessServiceDependency,
+    guild_state_service: GuildStateServiceDependency,
+):
+    """Get configuration for a specific guild."""
+
+    member = await guild_state_service.get_member(
+        guild_id=guild_id, user_id=user_id
+    )
+
+    if member is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not a member of this guild",
+        )
+
+    has_access = await access_service.has_config_access(
+        guild_id=guild_id, member=member, config_type=config_type
+    )
+
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this configuration",
+        )
+
+    config = await guild_state_service.get_config(
+        guild_id=guild_id,
+        config_type=config_type,
+    )
+
+    return config
+
+
+@router.patch("/{guild_id}/configuration", status_code=status.HTTP_200_OK)
+async def patch_guild_configuration(
+    guild_id: int,
+    update_data: ConfigUpdateBody,
+    user_id: UserIdDependency,
+    access_service: AccessServiceDependency,
+    guild_state_service: GuildStateServiceDependency,
+):
+    """Update configuration for a specific guild."""
+
+    member = await guild_state_service.get_member(
+        guild_id=guild_id, user_id=user_id
+    )
+
+    if member is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not a member of this guild",
+        )
+
+    has_access = await access_service.has_config_access(
+        guild_id=guild_id, member=member, config_type=update_data.config_type
+    )
+
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this configuration",
+        )
+
+    await guild_state_service.update_config(
+        guild_id=guild_id,
+        config_type=update_data.config_type,
+        data=update_data.data,
+    )
