@@ -14,6 +14,8 @@ def create_fastapi() -> FastAPI:
 
     app = FastAPI(title="Nightcore API", lifespan=lifespan)
 
+    app.state.config = config
+
     app.include_router(api_router)
 
     return app
