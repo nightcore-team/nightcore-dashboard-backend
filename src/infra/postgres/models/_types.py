@@ -6,7 +6,7 @@ import sqlalchemy.types as types
 from sqlalchemy import Dialect
 
 
-class _BaseDiscordID(types.TypeDecorator[int]):
+class BaseDiscordID(types.TypeDecorator[int]):
     impl = types.BigInteger
 
     cache_ok = True
@@ -18,10 +18,13 @@ class _BaseDiscordID(types.TypeDecorator[int]):
         return value
 
 
-class DiscordRoleID(_BaseDiscordID): ...
+class DiscordRoleID(BaseDiscordID): ...
 
 
-class DiscordChannelID(_BaseDiscordID): ...
+class DiscordChannelID(BaseDiscordID): ...
 
 
-class DiscordRoleNoAdmID(_BaseDiscordID): ...
+class DiscordCategoryID(BaseDiscordID): ...
+
+
+class DiscordRoleNoAdmID(DiscordRoleID): ...

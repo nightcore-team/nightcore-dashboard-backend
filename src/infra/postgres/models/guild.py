@@ -4,23 +4,15 @@ from sqlalchemy import ARRAY, JSON, BigInteger, Float, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.infra.postgres.models._annot import (
-    FAQPageAnnot,
     Rules,
 )
 from src.infra.postgres.models._mixins import IdIntegerMixin
+from src.infra.postgres.models._types import (
+    DiscordCategoryID,
+    DiscordChannelID,
+    DiscordRoleID,
+)
 from src.infra.postgres.models.base import Base
-
-
-class GuildFaqConfig(IdIntegerMixin, Base):
-    guild_id: Mapped[int] = mapped_column(
-        BigInteger, nullable=False, unique=True
-    )
-    faq: Mapped[list[FAQPageAnnot]] = mapped_column(
-        JSON,
-        nullable=False,
-        default=list,
-        server_default=text("'[]'::json"),
-    )
 
 
 class GuildOrgRolesConfig(IdIntegerMixin, Base):
@@ -33,8 +25,8 @@ class GuildOrgRolesConfig(IdIntegerMixin, Base):
     organizational_roles: Mapped[dict[str, dict[str, int]]] = mapped_column(
         JSON, nullable=False, default=dict
     )
-    check_role_requests_channel_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
+    check_role_requests_channel_id: Mapped[DiscordChannelID | None] = (
+        mapped_column(BigInteger, nullable=True)
     )
 
 
@@ -57,8 +49,8 @@ class GuildProposalConfig(IdIntegerMixin, Base):
     guild_id: Mapped[int] = mapped_column(
         BigInteger, nullable=False, unique=True
     )
-    create_proposal_channel_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
+    create_proposal_channel_id: Mapped[DiscordChannelID | None] = (
+        mapped_column(BigInteger, nullable=True)
     )
     proposals_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0
@@ -71,45 +63,45 @@ class GuildLoggingConfig(IdIntegerMixin, Base):  #
     guild_id: Mapped[int] = mapped_column(
         BigInteger, nullable=False, unique=True
     )
-    bans_log_channel_id: Mapped[int | None] = mapped_column(
+    bans_log_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    clans_log_channel_id: Mapped[int | None] = mapped_column(
+    clans_log_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    members_log_channel_id: Mapped[int | None] = mapped_column(
+    members_log_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    messages_log_channel_id: Mapped[int | None] = mapped_column(
+    messages_log_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    voices_log_channel_id: Mapped[int | None] = mapped_column(
+    voices_log_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    moderation_log_channel_id: Mapped[int | None] = mapped_column(
+    moderation_log_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    tickets_log_channel_id: Mapped[int | None] = mapped_column(
+    tickets_log_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    roles_log_channel_id: Mapped[int | None] = mapped_column(
+    roles_log_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    channels_log_channel_id: Mapped[int | None] = mapped_column(
+    channels_log_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    reactions_log_channel_id: Mapped[int | None] = mapped_column(
+    reactions_log_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    private_rooms_log_channel_id: Mapped[int | None] = mapped_column(
+    private_rooms_log_channel_id: Mapped[DiscordChannelID | None] = (
+        mapped_column(BigInteger, nullable=True)
+    )
+    economy_log_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    economy_log_channel_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
-    )
-    message_log_ignoring_channels_ids: Mapped[list[int] | None] = (
-        mapped_column(ARRAY(BigInteger), nullable=True)
-    )
+    message_log_ignoring_channels_ids: Mapped[
+        list[DiscordChannelID] | None
+    ] = mapped_column(ARRAY(BigInteger), nullable=True)
 
 
 class GuildEconomyConfig(IdIntegerMixin, Base):  #
@@ -120,20 +112,20 @@ class GuildEconomyConfig(IdIntegerMixin, Base):  #
     )
 
     coin_name: Mapped[str | None] = mapped_column(String, nullable=True)
-    economy_access_roles_ids: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
+    economy_access_roles_ids: Mapped[list[DiscordChannelID] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
     )
     reward_bonus: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default=text("0")
     )
-    economy_shop_buy_ping_roles_ids: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
+    economy_shop_buy_ping_roles_ids: Mapped[list[DiscordRoleID] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
     )
     economy_shop_items: Mapped[dict[str, int]] = mapped_column(
         JSON, nullable=False, default=dict, server_default=text("'{}'::json")
     )
-    casino_multiplayer_channel_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
+    casino_multiplayer_channel_id: Mapped[DiscordChannelID | None] = (
+        mapped_column(BigInteger, nullable=True)
     )
     color_drop_compensation: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default=text("0")
@@ -147,10 +139,10 @@ class GuildLevelsConfig(IdIntegerMixin, Base):  #
         BigInteger, nullable=False, unique=True
     )
 
-    count_messages_channel_id: Mapped[int | None] = mapped_column(
+    count_messages_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    level_notify_channel_id: Mapped[int | None] = mapped_column(
+    level_notify_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
     bonus_access_roles_ids: Mapped[dict[int, int]] = mapped_column(
@@ -197,23 +189,23 @@ class GuildClansConfig(IdIntegerMixin, Base):
     guild_id: Mapped[int] = mapped_column(
         BigInteger, nullable=False, unique=True
     )
-    create_clan_channel_category_id: Mapped[int | None] = mapped_column(
+    create_clan_channel_category_id: Mapped[DiscordCategoryID | None] = (
+        mapped_column(BigInteger, nullable=True)
+    )
+    clan_payday_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    clan_payday_channel_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
-    )
-    clan_shop_channel_id: Mapped[int | None] = mapped_column(
+    clan_shop_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
     clan_shop_items: Mapped[dict[str, int]] = mapped_column(
         JSON, nullable=False, default=dict
     )
-    clans_access_roles_ids: Mapped[list[int] | None] = mapped_column(
+    clans_access_roles_ids: Mapped[list[DiscordRoleID] | None] = mapped_column(
         ARRAY(BigInteger), nullable=True
     )
-    clan_buy_ping_roles_ids: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
+    clan_buy_ping_roles_ids: Mapped[list[DiscordRoleID] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
     )
     clan_reputation_per_payday: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default=text("1")
@@ -232,8 +224,8 @@ class GuildPrivateChannelsConfig(IdIntegerMixin, Base):
     guild_id: Mapped[int] = mapped_column(
         BigInteger, nullable=False, unique=True
     )
-    private_rooms_create_channel_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
+    private_rooms_create_channel_id: Mapped[DiscordChannelID | None] = (
+        mapped_column(BigInteger, nullable=True)
     )
 
 
@@ -243,19 +235,19 @@ class GuildModerationConfig(IdIntegerMixin, Base):  #
     guild_id: Mapped[int] = mapped_column(
         BigInteger, nullable=False, unique=True
     )
-    moderation_access_roles_ids: Mapped[list[int] | None] = mapped_column(
+    moderation_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
+    )  #
+    leadership_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
+    )  #
+    count_moderator_messages_channel_id: Mapped[DiscordChannelID | None] = (
+        mapped_column(BigInteger, nullable=True)
+    )  #
+    ban_access_roles_ids: Mapped[list[DiscordRoleID] | None] = mapped_column(
         ARRAY(BigInteger), nullable=True
     )  #
-    leadership_access_roles_ids: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
-    )  #
-    count_moderator_messages_channel_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
-    )  #
-    ban_access_roles_ids: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
-    )  #
-    unban_access_roles_ids: Mapped[list[int] | None] = mapped_column(
+    unban_access_roles_ids: Mapped[list[DiscordRoleID] | None] = mapped_column(
         ARRAY(BigInteger), nullable=True
     )
     mute_score: Mapped[float | None] = mapped_column(
@@ -292,30 +284,32 @@ class GuildModerationConfig(IdIntegerMixin, Base):  #
         Float, nullable=False, default=0.0, server_default=text("0.0")
     )
 
-    trackable_moderation_role_id: Mapped[int | None] = mapped_column(
+    trackable_moderation_role_id: Mapped[DiscordRoleID | None] = mapped_column(
         BigInteger, nullable=True
     )  #
 
-    ban_request_ping_role_id: Mapped[int | None] = mapped_column(
+    ban_request_ping_role_id: Mapped[DiscordRoleID | None] = mapped_column(
         BigInteger, nullable=True
     )  #
-    send_ban_request_channel_id: Mapped[int | None] = mapped_column(
+    send_ban_request_channel_id: Mapped[DiscordChannelID | None] = (
+        mapped_column(BigInteger, nullable=True)
+    )  #
+    mpmute_role_id: Mapped[DiscordRoleID | None] = mapped_column(
         BigInteger, nullable=True
     )  #
-    mpmute_role_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
-    )  #
-    vmute_role_id: Mapped[int | None] = mapped_column(
+    vmute_role_id: Mapped[DiscordRoleID | None] = mapped_column(
         BigInteger, nullable=True
     )  ##
-    mute_role_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    mute_role_id: Mapped[DiscordRoleID | None] = mapped_column(
+        BigInteger, nullable=True
+    )
     mute_type: Mapped[str] = mapped_column(
         String, nullable=False, default="role"
     )  #
-    fraction_roles_access_roles_ids: Mapped[dict[str, list[int]]] = (
+    fraction_roles_access_roles_ids: Mapped[dict[str, list[DiscordRoleID]]] = (
         mapped_column(JSON, nullable=False, default=dict)
     )  #
-    leader_access_rr_roles_ids: Mapped[list[int]] = mapped_column(
+    leader_access_rr_roles_ids: Mapped[list[DiscordRoleID]] = mapped_column(
         ARRAY(BigInteger), nullable=False, default=list
     )  #
 
@@ -326,14 +320,14 @@ class GuildNotificationsConfig(IdIntegerMixin, Base):  #
     guild_id: Mapped[int] = mapped_column(
         BigInteger, nullable=False, unique=True
     )
-    notifications_channel_id: Mapped[int | None] = mapped_column(
+    notifications_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    notifications_for_moderation_channel_id: Mapped[int | None] = (
+    notifications_for_moderation_channel_id: Mapped[
+        DiscordChannelID | None
+    ] = mapped_column(BigInteger, nullable=True)
+    notifications_from_bot_channel_id: Mapped[DiscordChannelID] = (
         mapped_column(BigInteger, nullable=True)
-    )
-    notifications_from_bot_channel_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
     )
 
 
@@ -346,19 +340,19 @@ class GuildTicketsConfig(IdIntegerMixin, Base):
     tickets_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0
     )
-    new_tickets_category_id: Mapped[int | None] = mapped_column(
+    new_tickets_category_id: Mapped[DiscordCategoryID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    closed_tickets_category_id: Mapped[int | None] = mapped_column(
+    closed_tickets_category_id: Mapped[DiscordCategoryID | None] = (
+        mapped_column(BigInteger, nullable=True)
+    )
+    create_ticket_channel_id: Mapped[DiscordChannelID | None] = mapped_column(
         BigInteger, nullable=True
     )
-    create_ticket_channel_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
+    pinned_tickets_category_id: Mapped[DiscordCategoryID | None] = (
+        mapped_column(BigInteger, nullable=True)
     )
-    pinned_tickets_category_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
-    )
-    create_ticket_ping_role_id: Mapped[int | None] = mapped_column(
+    create_ticket_ping_role_id: Mapped[DiscordRoleID | None] = mapped_column(
         BigInteger, nullable=True
     )
 
@@ -369,17 +363,17 @@ class GuildInfomakerConfig(IdIntegerMixin, Base):
     guild_id: Mapped[int] = mapped_column(
         BigInteger, nullable=False, unique=True
     )
-    admins_roles_ids: Mapped[list[int] | None] = mapped_column(
+    admins_roles_ids: Mapped[list[DiscordRoleID] | None] = mapped_column(
         ARRAY(BigInteger), nullable=True
     )
-    leaders_roles_ids: Mapped[list[int] | None] = mapped_column(
+    leaders_roles_ids: Mapped[list[DiscordRoleID] | None] = mapped_column(
         ARRAY(BigInteger), nullable=True
     )
-    admins_roles_logging_channel_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
+    admins_roles_logging_channel_id: Mapped[DiscordChannelID | None] = (
+        mapped_column(BigInteger, nullable=True)
     )
-    leaders_roles_logging_channel_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True
+    leaders_roles_logging_channel_id: Mapped[DiscordRoleID | None] = (
+        mapped_column(BigInteger, nullable=True)
     )
 
 
@@ -392,10 +386,10 @@ class GuildForumConfig(IdIntegerMixin, Base):
     section_id: Mapped[int] = mapped_column(
         Integer, nullable=False, unique=True
     )
-    channel_id: Mapped[int] = mapped_column(
+    channel_id: Mapped[DiscordChannelID] = mapped_column(
         BigInteger, nullable=False, unique=True
     )
-    role_id: Mapped[int] = mapped_column(
+    role_id: Mapped[DiscordRoleID] = mapped_column(
         BigInteger, nullable=False, unique=True
     )
 
@@ -406,80 +400,76 @@ class GuildAccessConfig(IdIntegerMixin, Base):
     )
 
     # Access to GuildFaqConfig
-    faq_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
+    faq_config_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
     )
 
     # Access to GuildForumConfig
-    forum_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
+    forum_config_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
     )
 
     # Access to GuildOrgRolesConfig
-    org_roles_config_access_roles_ids: Mapped[list[int] | None] = (
+    org_roles_config_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
         mapped_column(ARRAY(BigInteger), nullable=True)
     )
 
     # Access to GuildProposalConfig
-    proposal_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
+    proposal_config_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
     )
 
     # Access to GuildRulesConfig
-    rules_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
+    rules_config_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
     )
 
     # Access to GuildMultiplersConfig
-    multiplers_config_access_roles_ids: Mapped[list[int] | None] = (
+    multiplers_config_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
         mapped_column(ARRAY(BigInteger), nullable=True)
     )
 
     # Access to GuildLoggingConfig
-    logging_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
-    )
-
-    # Access to GuildEconomyConfig
-    economy_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
-    )
-
-    # Access to GuildLevelsConfig
-    levels_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
-    )
-
-    # Access to GuildClansConfig
-    clans_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
-    )
-
-    # Access to GuildPrivateChannelsConfig
-    private_channels_config_access_roles_ids: Mapped[list[int] | None] = (
+    logging_config_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
         mapped_column(ARRAY(BigInteger), nullable=True)
     )
 
+    # Access to GuildEconomyConfig
+    economy_config_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
+    )
+
+    # Access to GuildLevelsConfig
+    levels_config_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
+    )
+
+    # Access to GuildClansConfig
+    clans_config_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
+    )
+
+    # Access to GuildPrivateChannelsConfig
+    private_channels_config_access_roles_ids: Mapped[
+        list[DiscordRoleID] | None
+    ] = mapped_column(ARRAY(BigInteger), nullable=True)
+
     # Access to GuildModerationConfig
-    moderation_config_access_roles_ids: Mapped[list[int] | None] = (
+    moderation_config_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
         mapped_column(ARRAY(BigInteger), nullable=True)
     )
 
     # Access to GuildNotificationsConfig
-    notifications_config_access_roles_ids: Mapped[list[int] | None] = (
-        mapped_column(ARRAY(BigInteger), nullable=True)
-    )
+    notifications_config_access_roles_ids: Mapped[
+        list[DiscordRoleID] | None
+    ] = mapped_column(ARRAY(BigInteger), nullable=True)
 
     # Access to GuildTicketsConfig
-    tickets_config_access_roles_ids: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
+    tickets_config_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
+        mapped_column(ARRAY(BigInteger), nullable=True)
     )
 
     # Access to GuildInfomakerConfig
-    infomaker_config_access_roles_ids: Mapped[list[int] | None] = (
+    infomaker_config_access_roles_ids: Mapped[list[DiscordRoleID] | None] = (
         mapped_column(ARRAY(BigInteger), nullable=True)
-    )
-
-    component_builder_access_roles: Mapped[list[int] | None] = mapped_column(
-        ARRAY(BigInteger), nullable=True
     )

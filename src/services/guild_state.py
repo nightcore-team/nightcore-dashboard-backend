@@ -70,7 +70,13 @@ class GuildStateService:
         if issubclass(expected_type, int) and isinstance(value, int):
             return True
 
-        if issubclass(expected_type, bool) and isinstance(value, bool):  # noqa: SIM103
+        if issubclass(expected_type, bool) and isinstance(value, bool):
+            return True
+
+        if issubclass(expected_type, dict) and isinstance(value, dict):
+            return True
+
+        if issubclass(expected_type, str) and isinstance(value, str):  # noqa: SIM103
             return True
 
         return False
@@ -188,6 +194,8 @@ class GuildStateService:
 
             list_type = args[0]
 
+            value = set(value)  # type: ignore
+
             result = self._validate_array_type(
                 array_type=list_type,
                 value=value,  # pyright: ignore[reportUnknownArgumentType]
@@ -202,7 +210,7 @@ class GuildStateService:
                 expected_type=list_type,  # pyright: ignore[reportUnknownArgumentType]
             )
 
-        if issubclass(expected_type, list):
+        if issubclass(expected_type, list) or isinstance(value, list):
             return False
 
         return await self._validate_single_value(

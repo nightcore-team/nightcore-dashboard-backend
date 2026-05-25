@@ -5,11 +5,11 @@ from sqlalchemy.dialects.postgresql import array
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import InstrumentedAttribute
 
+from infra.postgres.models._types import DiscordRoleID
 from src.infra.postgres.models import (
     GuildAccessConfig,
     GuildClansConfig,
     GuildEconomyConfig,
-    GuildFaqConfig,
     GuildForumConfig,
     GuildInfomakerConfig,
     GuildLevelsConfig,
@@ -40,7 +40,6 @@ ConfigType = Union[  # noqa: UP007
     | GuildMultiplersConfig
     | GuildProposalConfig
     | GuildOrgRolesConfig
-    | GuildFaqConfig
     | GuildForumConfig
 ]
 
@@ -56,15 +55,16 @@ CONFIG_MODEL_MAP: dict[ConfigTypeEnum, type[ConfigType]] = {
     ConfigTypeEnum.INFOMAKER: GuildInfomakerConfig,
     ConfigTypeEnum.FORUM: GuildForumConfig,
     ConfigTypeEnum.RULES: GuildRulesConfig,
-    ConfigTypeEnum.PROPOSAL: GuildProposalConfig,
+    ConfigTypeEnum.PROPOSALS: GuildProposalConfig,
     ConfigTypeEnum.MULTIPLERS: GuildMultiplersConfig,
-    ConfigTypeEnum.ORG_ROLES: GuildOrgRolesConfig,
+    ConfigTypeEnum.ROLE_REQUEST: GuildOrgRolesConfig,
     ConfigTypeEnum.TICKETS: GuildTicketsConfig,
-    ConfigTypeEnum.FAQ: GuildFaqConfig,
+    ConfigTypeEnum.LOGGING: GuildLoggingConfig,
+    ConfigTypeEnum.ACCESS: GuildAccessConfig,
 }
 
 _ACCESS_COLUMNS: Final[
-    dict[ConfigTypeEnum, InstrumentedAttribute[list[int] | None]]
+    dict[ConfigTypeEnum, InstrumentedAttribute[list[DiscordRoleID] | None]]
 ] = {
     ConfigTypeEnum.LOGGING: GuildAccessConfig.logging_config_access_roles_ids,
     ConfigTypeEnum.ECONOMY: GuildAccessConfig.economy_config_access_roles_ids,
@@ -76,12 +76,10 @@ _ACCESS_COLUMNS: Final[
     ConfigTypeEnum.INFOMAKER: GuildAccessConfig.infomaker_config_access_roles_ids,  # noqa: E501
     ConfigTypeEnum.FORUM: GuildAccessConfig.forum_config_access_roles_ids,
     ConfigTypeEnum.RULES: GuildAccessConfig.rules_config_access_roles_ids,
-    ConfigTypeEnum.PROPOSAL: GuildAccessConfig.proposal_config_access_roles_ids,  # noqa: E501
+    ConfigTypeEnum.PROPOSALS: GuildAccessConfig.proposal_config_access_roles_ids,  # noqa: E501
     ConfigTypeEnum.MULTIPLERS: GuildAccessConfig.multiplers_config_access_roles_ids,  # noqa: E501
-    ConfigTypeEnum.ORG_ROLES: GuildAccessConfig.org_roles_config_access_roles_ids,  # noqa: E501
+    ConfigTypeEnum.ROLE_REQUEST: GuildAccessConfig.org_roles_config_access_roles_ids,  # noqa: E501
     ConfigTypeEnum.TICKETS: GuildAccessConfig.tickets_config_access_roles_ids,
-    ConfigTypeEnum.FAQ: GuildAccessConfig.faq_config_access_roles_ids,
-    ConfigTypeEnum.COMPONENT_BUILDER: GuildAccessConfig.component_builder_access_roles,  # noqa: E501
 }
 
 

@@ -29,3 +29,4 @@ class ChannelCacheEntry:
 class MemberCacheEntry:
     id: str
     roles: list[int]
+    administrator: bool
