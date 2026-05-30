@@ -1,11 +1,10 @@
-from typing import Final, TypeVar, Union
+from typing import Final, Union
 
 from sqlalchemy import Boolean, select, type_coerce
 from sqlalchemy.dialects.postgresql import array
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import InstrumentedAttribute
 
-from infra.postgres.models._types import DiscordRoleID
 from src.infra.postgres.models import (
     GuildAccessConfig,
     GuildClansConfig,
@@ -23,7 +22,7 @@ from src.infra.postgres.models import (
     GuildRulesConfig,
     GuildTicketsConfig,
 )
-from src.infra.postgres.models._enums import ConfigTypeEnum
+from src.utils._enums import ConfigTypeEnum
 
 ConfigType = Union[  # noqa: UP007
     GuildClansConfig
@@ -42,8 +41,6 @@ ConfigType = Union[  # noqa: UP007
     | GuildOrgRolesConfig
     | GuildForumConfig
 ]
-
-GuildT = TypeVar("GuildT", ConfigType, contravariant=True)  # type: ignore
 
 CONFIG_MODEL_MAP: dict[ConfigTypeEnum, type[ConfigType]] = {
     ConfigTypeEnum.ECONOMY: GuildEconomyConfig,
@@ -64,7 +61,7 @@ CONFIG_MODEL_MAP: dict[ConfigTypeEnum, type[ConfigType]] = {
 }
 
 _ACCESS_COLUMNS: Final[
-    dict[ConfigTypeEnum, InstrumentedAttribute[list[DiscordRoleID] | None]]
+    dict[ConfigTypeEnum, InstrumentedAttribute[list[int] | None]]
 ] = {
     ConfigTypeEnum.LOGGING: GuildAccessConfig.logging_config_access_roles_ids,
     ConfigTypeEnum.ECONOMY: GuildAccessConfig.economy_config_access_roles_ids,
@@ -83,12 +80,12 @@ _ACCESS_COLUMNS: Final[
 }
 
 
-async def get_or_create_specified_guild_config(  # noqa: UP047
+async def get_or_create_specified_guild_config(
     session: AsyncSession,
     *,
-    config_type: type[GuildT],
+    config_type: type[ConfigType],
     guild_id: int,
-) -> GuildT | None:
+) -> ConfigType:
     """Get the guild configuration from the database."""
 
     stmt = select(config_type).where(config_type.guild_id == guild_id)

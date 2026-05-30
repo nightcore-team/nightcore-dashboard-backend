@@ -3,7 +3,7 @@
 from fastapi import HTTPException, status
 from fastapi.routing import APIRouter
 
-from src.infra.postgres.models._enums import ConfigTypeEnum
+from src.utils._enums import ConfigTypeEnum
 
 from ..dependencies import (
     AccessServiceDependency,
@@ -11,7 +11,7 @@ from ..dependencies import (
     UserIdDependency,
 )
 from ..schemas import ChannelInfoSchema, RoleInfoSchema
-from ..schemas.guild import ConfigUpdateBody
+from ..schemas.configuration import ConfigModelType, ConfigUpdateBody
 
 router = APIRouter(prefix="/guilds", tags=["Guild Endpoints"])
 
@@ -123,7 +123,7 @@ async def get_guild_channels(
 @router.get(
     "/{guild_id}/configuration",
     status_code=status.HTTP_200_OK,
-    response_model=dict,
+    response_model=ConfigModelType,
     response_model_exclude={"id", "guild_id"},
 )
 async def get_guild_configuration(

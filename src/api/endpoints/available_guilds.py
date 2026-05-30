@@ -16,7 +16,7 @@ router = APIRouter(
 
 
 @router.get(
-    "/",
+    "",
     response_model=list[GuildInfoSchema],
     status_code=status.HTTP_200_OK,
 )

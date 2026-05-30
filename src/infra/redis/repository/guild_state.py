@@ -106,6 +106,9 @@ class GuildStateRepository(BaseRepository):
     async def get_guilds(self, guild_ids: list[str]) -> list[GuildCacheEntry]:
         """Return cached guilds."""
 
+        if not guild_ids:
+            return []
+
         result: list[GuildCacheEntry] = []
 
         raw_guilds = await self.redis.hmget(self._guilds_key, guild_ids)  # type: ignore

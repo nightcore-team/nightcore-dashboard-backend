@@ -127,7 +127,7 @@ def get_user_id(
             detail="Invalid JWT token.",
         )
 
-    user_id = payload.get("id")
+    user_id = payload.get("sub")
 
     if user_id is None:
         raise HTTPException(
@@ -135,7 +135,13 @@ def get_user_id(
             detail="Bad token payload.",
         )
 
-    return user_id
+    try:
+        return int(user_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Bad token payload.",
+        ) from e
 
 
 def get_access_service(

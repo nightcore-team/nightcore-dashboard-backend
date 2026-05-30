@@ -1,11 +1,7 @@
 """API schemas."""
 
-from typing import Any
-
 from pydantic import BaseModel
 from pydantic_settings import SettingsConfigDict
-
-from src.infra.postgres.models._enums import ConfigTypeEnum
 
 from ..types import DiscordId
 
@@ -39,8 +35,3 @@ class ChannelInfoSchema(Base):
     id: DiscordId
     name: str
     type: str
-
-
-class ConfigUpdateBody(Base):
-    config_type: ConfigTypeEnum
-    data: dict[str, Any]

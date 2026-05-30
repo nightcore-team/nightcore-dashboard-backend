@@ -1,0 +1,277 @@
+from typing import Annotated, Any, Union
+
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    PlainSerializer,
+    model_validator,
+)
+
+from src.utils._enums import ConfigTypeEnum
+
+
+class RoleID: ...
+
+
+class ChannelID: ...
+
+
+class CategoryID: ...
+
+
+def _parse_snowflake(v: Any) -> int:
+    return int(v)
+
+
+def _serialize_snowflake(v: int) -> str:
+    return str(v)
+
+
+SnowflakeValidator = BeforeValidator(_parse_snowflake)
+SnowflakeSerializer = PlainSerializer(
+    _serialize_snowflake, return_type=str, when_used="json"
+)
+
+DiscordRoleID = Annotated[
+    int,
+    SnowflakeValidator,
+    SnowflakeSerializer,
+    RoleID(),
+]
+DiscordChannelID = Annotated[
+    int,
+    SnowflakeValidator,
+    SnowflakeSerializer,
+    ChannelID(),
+]
+DiscordCategoryID = Annotated[
+    int,
+    SnowflakeValidator,
+    SnowflakeSerializer,
+    CategoryID(),
+]
+
+DiscordRoleIDList = Annotated[list[DiscordRoleID], Field(max_length=250)]
+DiscordChannelIDList = Annotated[list[DiscordChannelID], Field(max_length=500)]
+DiscordCategoryIDList = Annotated[
+    list[DiscordCategoryID], Field(max_length=50)
+]
+
+
+class BaseGuildConfig(BaseModel):
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+        extra="ignore",
+    )
+
+
+class GuildOrgRolesConfigSchema(BaseGuildConfig):
+    illegal_roles: dict[str, dict[str, DiscordRoleID]] = {}
+    organizational_roles: dict[str, dict[str, DiscordRoleID]] = {}
+    check_role_requests_channel_id: DiscordChannelID | None = None
+
+
+class GuildRulesConfigSchema(BaseGuildConfig):
+    guild_rules: dict[str, Any] = {"chapters": []}
+    rules_channel_id: DiscordChannelID | None = None
+
+
+class GuildProposalConfigSchema(BaseGuildConfig):
+    create_proposal_channel_id: DiscordChannelID | None = None
+    proposals_count: int = 0
+
+
+class GuildLoggingConfigSchema(BaseGuildConfig):
+    bans_log_channel_id: DiscordChannelID | None = None
+    clans_log_channel_id: DiscordChannelID | None = None
+    members_log_channel_id: DiscordChannelID | None = None
+    messages_log_channel_id: DiscordChannelID | None = None
+    voices_log_channel_id: DiscordChannelID | None = None
+    moderation_log_channel_id: DiscordChannelID | None = None
+    tickets_log_channel_id: DiscordChannelID | None = None
+    roles_log_channel_id: DiscordChannelID | None = None
+    channels_log_channel_id: DiscordChannelID | None = None
+    reactions_log_channel_id: DiscordChannelID | None = None
+    private_rooms_log_channel_id: DiscordChannelID | None = None
+    economy_log_channel_id: DiscordChannelID | None = None
+    message_log_ignoring_channels_ids: DiscordChannelIDList | None = None
+
+
+class GuildEconomyConfigSchema(BaseGuildConfig):
+    coin_name: str | None = None
+    economy_access_roles_ids: DiscordRoleIDList | None = None
+    reward_bonus: int = 0
+    economy_shop_buy_ping_roles_ids: DiscordRoleIDList | None = None
+    economy_shop_items: dict[str, int] = {}
+    casino_multiplayer_channel_id: DiscordChannelID | None = None
+    color_drop_compensation: int = 0
+
+
+class GuildLevelsConfigSchema(BaseGuildConfig):
+    count_messages_channel_id: DiscordChannelID | None = None
+    level_notify_channel_id: DiscordChannelID | None = None
+    bonus_access_roles_ids: dict[DiscordRoleID, int] = {}
+    level_roles: dict[str, DiscordRoleID] = {}
+    count_messages_type: str = "channel_only"
+
+
+class GuildMultiplersConfigSchema(BaseGuildConfig):
+    base_exp_multiplier: int = 1
+    temp_exp_multiplier: int | None = None
+    base_coins_multiplier: int = 1
+    temp_coins_multiplier: float | None = None
+    base_battlepass_multiplier: int = 1
+    temp_battlepass_multiplier: int | None = None
+
+
+class GuildClansConfigSchema(BaseGuildConfig):
+    create_clan_channel_category_id: DiscordCategoryID | None = None
+    clan_payday_channel_id: DiscordChannelID | None = None
+    clan_shop_channel_id: DiscordChannelID | None = None
+    clan_shop_items: dict[str, int] = {}
+    clans_access_roles_ids: DiscordRoleIDList | None = None
+    clan_buy_ping_roles_ids: DiscordRoleIDList | None = None
+    clan_reputation_per_payday: int = 1
+    base_exp_multiplier: int = 1
+    clan_improvements: list[int] = []
+
+
+class GuildPrivateChannelsConfigSchema(BaseGuildConfig):
+    private_rooms_create_channel_id: DiscordChannelID | None = None
+
+
+class GuildModerationConfigSchema(BaseGuildConfig):
+    moderation_access_roles_ids: DiscordRoleIDList | None = None
+    leadership_access_roles_ids: DiscordRoleIDList | None = None
+    count_moderator_messages_channel_id: DiscordChannelID | None = None
+    ban_access_roles_ids: DiscordRoleIDList | None = None
+    unban_access_roles_ids: DiscordRoleIDList | None = None
+    mute_score: float | None = 0.0
+    ban_score: float | None = 0.0
+    kick_score: float | None = 0.0
+    ticket_score: float | None = 0.0
+    role_request_score: float | None = 0.0
+    role_remove_score: float | None = 0.0
+    ticket_ban_score: float | None = 0.0
+    mpmute_score: float | None = 0.0
+    vmute_score: float | None = 0.0
+    message_score: float | None = 0.0
+    notification_score: float | None = 0.0
+    trackable_moderation_role_id: DiscordRoleID | None = None
+    ban_request_ping_role_id: DiscordRoleID | None = None
+    send_ban_request_channel_id: DiscordChannelID | None = None
+    mpmute_role_id: DiscordRoleID | None = None
+    vmute_role_id: DiscordRoleID | None = None
+    mute_role_id: DiscordRoleID | None = None
+    mute_type: str = "role"
+    fraction_roles_access_roles_ids: dict[str, DiscordRoleIDList] = {}
+    leader_access_rr_roles_ids: DiscordRoleIDList = []
+
+
+class GuildNotificationsConfigSchema(BaseGuildConfig):
+    notifications_channel_id: DiscordChannelID | None = None
+    notifications_for_moderation_channel_id: DiscordChannelID | None = None
+    notifications_from_bot_channel_id: DiscordChannelID | None = None
+
+
+class GuildTicketsConfigSchema(BaseGuildConfig):
+    tickets_count: int = 0
+    new_tickets_category_id: DiscordCategoryID | None = None
+    closed_tickets_category_id: DiscordCategoryID | None = None
+    create_ticket_channel_id: DiscordChannelID | None = None
+    pinned_tickets_category_id: DiscordCategoryID | None = None
+    create_ticket_ping_role_id: DiscordRoleID | None = None
+
+
+class GuildInfomakerConfigSchema(BaseGuildConfig):
+    admins_roles_ids: DiscordRoleIDList | None = None
+    leaders_roles_ids: DiscordRoleIDList | None = None
+    admins_roles_logging_channel_id: DiscordChannelID | None = None
+    leaders_roles_logging_channel_id: DiscordChannelID | None = None
+
+
+class GuildForumConfigSchema(BaseGuildConfig):
+    available: bool
+    is_enabled: bool
+
+
+class GuildAccessConfigSchema(BaseGuildConfig):
+    forum_config_access_roles_ids: DiscordRoleIDList | None = None
+    org_roles_config_access_roles_ids: DiscordRoleIDList | None = None
+    proposal_config_access_roles_ids: DiscordRoleIDList | None = None
+    rules_config_access_roles_ids: DiscordRoleIDList | None = None
+    multiplers_config_access_roles_ids: DiscordRoleIDList | None = None
+    logging_config_access_roles_ids: DiscordRoleIDList | None = None
+    economy_config_access_roles_ids: DiscordRoleIDList | None = None
+    levels_config_access_roles_ids: DiscordRoleIDList | None = None
+    clans_config_access_roles_ids: DiscordRoleIDList | None = None
+    private_channels_config_access_roles_ids: DiscordRoleIDList | None = None
+    moderation_config_access_roles_ids: DiscordRoleIDList | None = None
+    notifications_config_access_roles_ids: DiscordRoleIDList | None = None
+    tickets_config_access_roles_ids: DiscordRoleIDList | None = None
+    infomaker_config_access_roles_ids: DiscordRoleIDList | None = None
+
+
+ConfigModelType = Union[  # noqa: UP007
+    GuildPrivateChannelsConfigSchema,
+    GuildModerationConfigSchema,
+    GuildNotificationsConfigSchema,
+    GuildTicketsConfigSchema,
+    GuildInfomakerConfigSchema,
+    GuildForumConfigSchema,
+    GuildAccessConfigSchema,
+    GuildEconomyConfigSchema,
+    GuildLevelsConfigSchema,
+    GuildClansConfigSchema,
+    GuildMultiplersConfigSchema,
+    GuildRulesConfigSchema,
+    GuildProposalConfigSchema,
+    GuildOrgRolesConfigSchema,
+    GuildLoggingConfigSchema,
+]
+
+CONFIG_MODEL_MAP = {
+    ConfigTypeEnum.PRIVATE_CHANNELS: GuildPrivateChannelsConfigSchema,
+    ConfigTypeEnum.MODERATION: GuildModerationConfigSchema,
+    ConfigTypeEnum.NOTIFICATIONS: GuildNotificationsConfigSchema,
+    ConfigTypeEnum.TICKETS: GuildTicketsConfigSchema,
+    ConfigTypeEnum.INFOMAKER: GuildInfomakerConfigSchema,
+    ConfigTypeEnum.FORUM: GuildForumConfigSchema,
+    ConfigTypeEnum.ACCESS: GuildAccessConfigSchema,
+    ConfigTypeEnum.ECONOMY: GuildEconomyConfigSchema,
+    ConfigTypeEnum.LEVELS: GuildLevelsConfigSchema,
+    ConfigTypeEnum.CLANS: GuildClansConfigSchema,
+    ConfigTypeEnum.MULTIPLERS: GuildMultiplersConfigSchema,
+    ConfigTypeEnum.RULES: GuildRulesConfigSchema,
+    ConfigTypeEnum.PROPOSALS: GuildProposalConfigSchema,
+    ConfigTypeEnum.ROLE_REQUEST: GuildOrgRolesConfigSchema,
+    ConfigTypeEnum.LOGGING: GuildLoggingConfigSchema,
+}
+
+
+class ConfigUpdateBody(BaseModel):
+    config_type: ConfigTypeEnum
+    data: ConfigModelType
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_config(cls, values: dict[str, Any]) -> dict[str, Any]:
+        config_type = values.get("config_type")
+        data = values.get("data")
+
+        model_cls = CONFIG_MODEL_MAP.get(ConfigTypeEnum(config_type))
+
+        if model_cls is None:
+            raise ValueError(
+                "No configuration model mapped for this config_type"
+            )
+
+        if not isinstance(data, dict):
+            raise ValueError("Field 'data' must be a dictionary")
+
+        values["data"] = model_cls.model_validate(data)
+
+        return values

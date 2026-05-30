@@ -2,6 +2,7 @@
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.endpoints import router as api_router
 from src.core._global import config
@@ -13,6 +14,16 @@ def create_fastapi() -> FastAPI:
     """Create and return an instance of the FastAPI application."""
 
     app = FastAPI(title="Nightcore API", lifespan=lifespan)
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            config.api.DASHBOARD_FRONTEND_URI,
+        ],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+        allow_headers=["*"],
+    )
 
     app.state.config = config
 

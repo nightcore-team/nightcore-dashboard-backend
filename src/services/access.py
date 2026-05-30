@@ -1,13 +1,13 @@
 """Access service implementation."""
 
 from src.domain.interfaces.user_guilds_repository import IUserGuildsRepository
-from src.infra.postgres.models._enums import ConfigTypeEnum
 from src.infra.postgres.operations import (
     get_available_guild_configs,
     has_guild_config_access,
 )
 from src.infra.postgres.uow import UnitOfWork
 from src.infra.redis.models import MemberCacheEntry
+from src.utils._enums import ConfigTypeEnum
 
 
 class AccessService:
@@ -30,9 +30,14 @@ class AccessService:
         """Get user-accessible configs for a specific guild."""
 
         async with self._uow.start() as session:
-            return await get_available_guild_configs(
+            configurations = await get_available_guild_configs(
                 session, guild_id=guild_id, roles=member.roles
             )
+
+        if member.administrator:
+            configurations.append(ConfigTypeEnum.ACCESS.value)
+
+        return configurations
 
     async def has_config_access(
         self,
