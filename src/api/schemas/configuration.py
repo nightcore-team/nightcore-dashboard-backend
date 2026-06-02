@@ -1,24 +1,113 @@
-from typing import Annotated, Any, Union
+from dataclasses import dataclass, field
+from typing import Annotated, Any, TypedDict, Union
 
 from pydantic import (
+    AfterValidator,
     BaseModel,
     BeforeValidator,
     ConfigDict,
     Field,
     PlainSerializer,
-    model_validator,
+    ValidationInfo,
 )
 
-from src.utils._enums import ConfigTypeEnum
+from src.utils._enums import (
+    ConfigMuteTypeEnum,
+    ConfigTypeEnum,
+    MessageCountTypeEnum,
+)
 
 
-class RoleID: ...
+class RoleInfo(TypedDict):
+    id: str
+    name: str
+    color: str
+    position: int
+    administrator: bool
 
 
-class ChannelID: ...
+class ChannelInfo(TypedDict):
+    id: str
+    name: str
+    type: str
 
 
-class CategoryID: ...
+@dataclass
+class ValidationContext:
+    guild_id: int
+    roles: dict[int, RoleInfo] = field(default_factory=dict[int, RoleInfo])
+    channels: dict[int, ChannelInfo] = field(
+        default_factory=dict[int, ChannelInfo]
+    )
+
+
+def _validate_role_id(v: Any, info: ValidationInfo) -> int:
+    value = int(v)
+    ctx = info.context
+
+    if not isinstance(ctx, ValidationContext):
+        raise ValueError("Invalid validation context")
+
+    if value not in ctx.roles:
+        raise ValueError(
+            f"Role {value} does not exist in guild {ctx.guild_id}"
+        )
+
+    return value
+
+
+def _validate_role_no_adm_id(v: Any, info: ValidationInfo) -> int:
+    value = int(v)
+    ctx = info.context
+
+    if not isinstance(ctx, ValidationContext):
+        raise ValueError("Invalid validation context")
+
+    if value not in ctx.roles:
+        raise ValueError(
+            f"Role {value} does not exist in guild {ctx.guild_id}"
+        )
+
+    role = ctx.roles[value]
+
+    if role["administrator"]:
+        raise ValueError("Cannot use role with administrator permissions")
+
+    return value
+
+
+def _validate_channel_id(v: Any, info: ValidationInfo) -> int:
+    value = int(v)
+    ctx = info.context
+
+    if not isinstance(ctx, ValidationContext):
+        raise ValueError("Invalid validation context")
+
+    if value not in ctx.channels:
+        raise ValueError(
+            f"Channel {value} does not exist in guild {ctx.guild_id}"
+        )
+    return value
+
+
+def _validate_category_id(v: Any, info: ValidationInfo) -> int:
+    value = int(v)
+    ctx = info.context
+
+    if not isinstance(ctx, ValidationContext):
+        raise ValueError("Invalid validation context")
+
+    if value not in ctx.channels:
+        raise ValueError(
+            f"Category {value} does not exist in guild {ctx.guild_id}"
+        )
+
+    channel = ctx.channels[value]
+
+    if channel["type"] != "category":
+        raise ValueError("Value must be a category type channel")
+
+    return value
 
 
 def _parse_snowflake(v: Any) -> int:
@@ -38,19 +127,25 @@ DiscordRoleID = Annotated[
     int,
     SnowflakeValidator,
     SnowflakeSerializer,
-    RoleID(),
+    AfterValidator(_validate_role_id),
+]
+DiscordRoleNoAdmID = Annotated[
+    int,
+    SnowflakeValidator,
+    SnowflakeSerializer,
+    AfterValidator(_validate_role_no_adm_id),
 ]
 DiscordChannelID = Annotated[
     int,
     SnowflakeValidator,
     SnowflakeSerializer,
-    ChannelID(),
+    AfterValidator(_validate_channel_id),
 ]
 DiscordCategoryID = Annotated[
     int,
     SnowflakeValidator,
     SnowflakeSerializer,
-    CategoryID(),
+    AfterValidator(_validate_category_id),
 ]
 
 DiscordRoleIDList = Annotated[list[DiscordRoleID], Field(max_length=250)]
@@ -58,6 +153,11 @@ DiscordChannelIDList = Annotated[list[DiscordChannelID], Field(max_length=500)]
 DiscordCategoryIDList = Annotated[
     list[DiscordCategoryID], Field(max_length=50)
 ]
+AutocompleteableString = Annotated[str, Field(max_length=100)]
+SelectMenuLabelString = Annotated[str, Field(max_length=100)]
+NickNameTagString = Annotated[str, Field(max_length=7)]
+TitleString = Annotated[str, Field(max_length=256)]
+EmbedDescriptionString = Annotated[str, Field(max_length=4096)]
 
 
 class BaseGuildConfig(BaseModel):
@@ -68,20 +168,47 @@ class BaseGuildConfig(BaseModel):
     )
 
 
+class GuildOrgRoleSchema(BaseGuildConfig):
+    role_id: DiscordRoleNoAdmID
+    tag: NickNameTagString
+    name: SelectMenuLabelString
+
+
 class GuildOrgRolesConfigSchema(BaseGuildConfig):
-    illegal_roles: dict[str, dict[str, DiscordRoleID]] = {}
-    organizational_roles: dict[str, dict[str, DiscordRoleID]] = {}
+    illegal_roles: list[GuildOrgRoleSchema] | None = Field(
+        max_length=25, default=None
+    )
+    organizational_roles: list[GuildOrgRoleSchema] | None = Field(
+        max_length=25, default=None
+    )
     check_role_requests_channel_id: DiscordChannelID | None = None
 
 
+class GuildSubRuleSchema(BaseGuildConfig):
+    text: EmbedDescriptionString
+
+
+class GuildRuleSchema(BaseGuildConfig):
+    text: EmbedDescriptionString
+    subrules: list[GuildSubRuleSchema]
+
+
+class RulesChapterSchema(BaseGuildConfig):
+    text: TitleString
+    rules: list[GuildRuleSchema]
+
+
+class GuildRulesSchema(BaseGuildConfig):
+    chapters: list[RulesChapterSchema]
+
+
 class GuildRulesConfigSchema(BaseGuildConfig):
-    guild_rules: dict[str, Any] = {"chapters": []}
+    guild_rules: GuildRulesSchema | None = None
     rules_channel_id: DiscordChannelID | None = None
 
 
 class GuildProposalConfigSchema(BaseGuildConfig):
     create_proposal_channel_id: DiscordChannelID | None = None
-    proposals_count: int = 0
 
 
 class GuildLoggingConfigSchema(BaseGuildConfig):
@@ -100,22 +227,39 @@ class GuildLoggingConfigSchema(BaseGuildConfig):
     message_log_ignoring_channels_ids: DiscordChannelIDList | None = None
 
 
+class GuildEconomyShopItemSchema(BaseGuildConfig):
+    name: SelectMenuLabelString
+    cost: int
+
+
 class GuildEconomyConfigSchema(BaseGuildConfig):
-    coin_name: str | None = None
+    coin_name: str | None = Field(max_length=20, default=None)
     economy_access_roles_ids: DiscordRoleIDList | None = None
     reward_bonus: int = 0
     economy_shop_buy_ping_roles_ids: DiscordRoleIDList | None = None
-    economy_shop_items: dict[str, int] = {}
+    economy_shop_items: list[GuildEconomyShopItemSchema] | None = Field(
+        max_length=25, default=None
+    )
     casino_multiplayer_channel_id: DiscordChannelID | None = None
     color_drop_compensation: int = 0
+
+
+class GuildLevelRoleSchema(BaseGuildConfig):
+    level: int
+    role_id: DiscordRoleNoAdmID
+
+
+class GuildBonusRoleSchema(BaseGuildConfig):
+    role_id: DiscordRoleID
+    coins: int
 
 
 class GuildLevelsConfigSchema(BaseGuildConfig):
     count_messages_channel_id: DiscordChannelID | None = None
     level_notify_channel_id: DiscordChannelID | None = None
-    bonus_access_roles_ids: dict[DiscordRoleID, int] = {}
-    level_roles: dict[str, DiscordRoleID] = {}
-    count_messages_type: str = "channel_only"
+    bonus_access_roles_ids: list[GuildBonusRoleSchema] | None = None
+    level_roles: list[GuildLevelRoleSchema] | None = None
+    count_messages_type: MessageCountTypeEnum | None = None
 
 
 class GuildMultiplersConfigSchema(BaseGuildConfig):
@@ -127,20 +271,30 @@ class GuildMultiplersConfigSchema(BaseGuildConfig):
     temp_battlepass_multiplier: int | None = None
 
 
+class GuildClanShopItemSchema(BaseGuildConfig):
+    name: SelectMenuLabelString
+    cost: int
+
+
 class GuildClansConfigSchema(BaseGuildConfig):
     create_clan_channel_category_id: DiscordCategoryID | None = None
     clan_payday_channel_id: DiscordChannelID | None = None
     clan_shop_channel_id: DiscordChannelID | None = None
-    clan_shop_items: dict[str, int] = {}
+    clan_shop_items: list[GuildClanShopItemSchema] | None = None
     clans_access_roles_ids: DiscordRoleIDList | None = None
     clan_buy_ping_roles_ids: DiscordRoleIDList | None = None
     clan_reputation_per_payday: int = 1
     base_exp_multiplier: int = 1
-    clan_improvements: list[int] = []
+    clan_improvements: list[int] | None = Field(max_length=3, min_length=3)
 
 
 class GuildPrivateChannelsConfigSchema(BaseGuildConfig):
     private_rooms_create_channel_id: DiscordChannelID | None = None
+
+
+class GuildFractionRoleSchema(BaseGuildConfig):
+    access_roles: DiscordRoleIDList | None = None
+    role_id: DiscordRoleID
 
 
 class GuildModerationConfigSchema(BaseGuildConfig):
@@ -166,9 +320,11 @@ class GuildModerationConfigSchema(BaseGuildConfig):
     mpmute_role_id: DiscordRoleID | None = None
     vmute_role_id: DiscordRoleID | None = None
     mute_role_id: DiscordRoleID | None = None
-    mute_type: str = "role"
-    fraction_roles_access_roles_ids: dict[str, DiscordRoleIDList] = {}
-    leader_access_rr_roles_ids: DiscordRoleIDList = []
+    mute_type: ConfigMuteTypeEnum | None = None
+    fraction_roles_access_roles_ids: list[GuildFractionRoleSchema] | None = (
+        Field(max_length=25, default=None)
+    )
+    leader_access_rr_roles_ids: DiscordRoleIDList | None = None
 
 
 class GuildNotificationsConfigSchema(BaseGuildConfig):
@@ -194,8 +350,9 @@ class GuildInfomakerConfigSchema(BaseGuildConfig):
 
 
 class GuildForumConfigSchema(BaseGuildConfig):
-    available: bool
-    is_enabled: bool
+    is_enabled: bool = False
+    role_id: int | None = None
+    channel_id: int | None = None
 
 
 class GuildAccessConfigSchema(BaseGuildConfig):
@@ -233,7 +390,7 @@ ConfigModelType = Union[  # noqa: UP007
     GuildLoggingConfigSchema,
 ]
 
-CONFIG_MODEL_MAP = {
+CONFIG_SCHEMA_MODEL_MAP = {
     ConfigTypeEnum.PRIVATE_CHANNELS: GuildPrivateChannelsConfigSchema,
     ConfigTypeEnum.MODERATION: GuildModerationConfigSchema,
     ConfigTypeEnum.NOTIFICATIONS: GuildNotificationsConfigSchema,
@@ -254,24 +411,4 @@ CONFIG_MODEL_MAP = {
 
 class ConfigUpdateBody(BaseModel):
     config_type: ConfigTypeEnum
-    data: ConfigModelType
-
-    @model_validator(mode="before")
-    @classmethod
-    def parse_config(cls, values: dict[str, Any]) -> dict[str, Any]:
-        config_type = values.get("config_type")
-        data = values.get("data")
-
-        model_cls = CONFIG_MODEL_MAP.get(ConfigTypeEnum(config_type))
-
-        if model_cls is None:
-            raise ValueError(
-                "No configuration model mapped for this config_type"
-            )
-
-        if not isinstance(data, dict):
-            raise ValueError("Field 'data' must be a dictionary")
-
-        values["data"] = model_cls.model_validate(data)
-
-        return values
+    data: dict[str, Any]

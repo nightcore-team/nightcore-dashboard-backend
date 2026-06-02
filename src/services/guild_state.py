@@ -1,10 +1,14 @@
 """Guild state service implementation."""
 
-from typing import Any, get_args, get_origin, get_type_hints
+import asyncio
+from typing import Any
 
-from fastapi import HTTPException, status
-
-from src.api.schemas.configuration import ChannelID, ConfigModelType, RoleID
+from src.api.schemas.configuration import (
+    CONFIG_SCHEMA_MODEL_MAP,
+    ChannelInfo,
+    RoleInfo,
+    ValidationContext,
+)
 from src.domain.interfaces.guild_state_repository import IGuildStateRepository
 from src.infra.postgres.operations import (
     CONFIG_MODEL_MAP,
@@ -30,35 +34,39 @@ class GuildStateService:
         self._roles_cache: dict[int, dict[int, RoleCacheEntry]] = {}
         self._channels_cache: dict[int, dict[int, ChannelCacheEntry]] = {}
 
-    async def _get_cached_channel(
-        self, guild_id: int, channel_id: int
-    ) -> ChannelCacheEntry | None:
-        guild_channels = self._channels_cache.setdefault(guild_id, {})
-
-        if channel_id in guild_channels:
-            return guild_channels[channel_id]
-
-        channel = await self._guild_state_repo.get_channel(
-            guild_id, channel_id
+    async def _build_validation_context(
+        self, guild_id: int
+    ) -> ValidationContext:
+        roles_list, channels_list = await asyncio.gather(
+            self.get_roles(guild_id),
+            self.get_channels(guild_id),
         )
-        if channel is not None:
-            guild_channels[channel_id] = channel
 
-        return channel
+        roles_dict = {
+            int(role.id): RoleInfo(
+                id=role.id,
+                name=role.name,
+                color=role.color,
+                position=role.position,
+                administrator=role.administrator,
+            )
+            for role in roles_list
+        }
 
-    async def _get_cached_role(
-        self, guild_id: int, role_id: int
-    ) -> RoleCacheEntry | None:
-        guild_roles = self._roles_cache.setdefault(guild_id, {})
+        channels_dict = {
+            int(channel.id): ChannelInfo(
+                id=channel.id,
+                name=channel.name,
+                type=channel.type,
+            )
+            for channel in channels_list
+        }
 
-        if role_id in guild_roles:
-            return guild_roles[role_id]
-
-        role = await self._guild_state_repo.get_role(guild_id, role_id)
-        if role is not None:
-            guild_roles[role_id] = role
-
-        return role
+        return ValidationContext(
+            guild_id=guild_id,
+            roles=roles_dict,
+            channels=channels_dict,
+        )
 
     async def get_roles(self, guild_id: int) -> list[RoleCacheEntry]:
         return await self._guild_state_repo.get_roles(guild_id)
@@ -91,60 +99,23 @@ class GuildStateService:
     async def get_guilds(self, guild_ids: list[str]) -> list[GuildCacheEntry]:
         return await self._guild_state_repo.get_guilds(guild_ids)
 
-    async def _validate_discord_types(
-        self, guild_id: int, dump: dict[str, Any], hints: dict[str, Any]
-    ) -> bool:
-        for field_name, value in dump.items():
-            if value is None:
-                continue
-
-            annotation = hints.get(field_name)
-            if annotation is None:
-                continue
-
-            args = get_args(annotation)
-            inner = next((a for a in args if a is not type(None)), annotation)
-
-            metadata = get_args(inner)
-            is_list = get_origin(inner) is list
-
-            if is_list:
-                item_type = get_args(inner)[0] if get_args(inner) else None
-                metadata = get_args(item_type) if item_type else ()
-
-            if any(isinstance(m, ChannelID) for m in metadata):
-                values = value if is_list else [value]
-                for channel_id in values:
-                    if (
-                        await self._get_cached_channel(guild_id, channel_id)
-                        is None
-                    ):
-                        return False
-
-            elif any(isinstance(m, RoleID) for m in metadata):
-                values = value if is_list else [value]
-                for role_id in values:
-                    if await self._get_cached_role(guild_id, role_id) is None:
-                        return False
-
-        return True
-
     async def update_config(
-        self, guild_id: int, config_type: ConfigTypeEnum, data: ConfigModelType
+        self, guild_id: int, config_type: ConfigTypeEnum, data: dict[str, Any]
     ):
         type_ = CONFIG_MODEL_MAP.get(config_type)
 
         if type_ is None:
             raise ValueError("Unknown config type")
 
-        hints = get_type_hints(type(data), include_extras=True)
-        dump = data.model_dump(exclude_unset=True)
+        pydantic_type = CONFIG_SCHEMA_MODEL_MAP.get(config_type)
 
-        if not await self._validate_discord_types(guild_id, dump, hints):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Неизвестный канал или роль в переданных данных",
-            )
+        if pydantic_type is None:
+            raise ValueError("Pydantic model not found for this config type")
+
+        context = await self._build_validation_context(guild_id)
+        validated_model = pydantic_type.model_validate(data, context=context)
+
+        dump = validated_model.model_dump(exclude_unset=True)
 
         async with self._uow.start() as session:
             config = await get_or_create_specified_guild_config(

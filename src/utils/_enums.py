@@ -17,3 +17,13 @@ class ConfigTypeEnum(Enum):
     MULTIPLERS = "multiplers"
     TICKETS = "tickets"
     ACCESS = "access"
+
+
+class ConfigMuteTypeEnum(Enum):
+    TIMEOUT = "timeout"
+    ROLE = "role"
+
+
+class MessageCountTypeEnum(Enum):
+    CHANNEL_ONLY = "channel_only"
+    ALL = "all"

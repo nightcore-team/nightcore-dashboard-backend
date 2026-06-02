@@ -14,11 +14,11 @@ from src.infra.postgres.models import (
     GuildLevelsConfig,
     GuildLoggingConfig,
     GuildModerationConfig,
-    GuildMultiplersConfig,
+    GuildMultipliersConfig,
     GuildNotificationsConfig,
-    GuildOrgRolesConfig,
     GuildPrivateChannelsConfig,
-    GuildProposalConfig,
+    GuildProposalsConfig,
+    GuildRoleRequestConfig,
     GuildRulesConfig,
     GuildTicketsConfig,
 )
@@ -36,9 +36,9 @@ ConfigType = Union[  # noqa: UP007
     | GuildInfomakerConfig
     | GuildAccessConfig
     | GuildRulesConfig
-    | GuildMultiplersConfig
-    | GuildProposalConfig
-    | GuildOrgRolesConfig
+    | GuildMultipliersConfig
+    | GuildProposalsConfig
+    | GuildRoleRequestConfig
     | GuildForumConfig
 ]
 
@@ -52,9 +52,9 @@ CONFIG_MODEL_MAP: dict[ConfigTypeEnum, type[ConfigType]] = {
     ConfigTypeEnum.INFOMAKER: GuildInfomakerConfig,
     ConfigTypeEnum.FORUM: GuildForumConfig,
     ConfigTypeEnum.RULES: GuildRulesConfig,
-    ConfigTypeEnum.PROPOSALS: GuildProposalConfig,
-    ConfigTypeEnum.MULTIPLERS: GuildMultiplersConfig,
-    ConfigTypeEnum.ROLE_REQUEST: GuildOrgRolesConfig,
+    ConfigTypeEnum.PROPOSALS: GuildProposalsConfig,
+    ConfigTypeEnum.MULTIPLERS: GuildMultipliersConfig,
+    ConfigTypeEnum.ROLE_REQUEST: GuildRoleRequestConfig,
     ConfigTypeEnum.TICKETS: GuildTicketsConfig,
     ConfigTypeEnum.LOGGING: GuildLoggingConfig,
     ConfigTypeEnum.ACCESS: GuildAccessConfig,

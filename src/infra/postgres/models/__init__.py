@@ -1,4 +1,4 @@
-from .guild import (
+from .configurations import (
     Base,
     GuildAccessConfig,
     GuildClansConfig,
@@ -8,11 +8,11 @@ from .guild import (
     GuildLevelsConfig,
     GuildLoggingConfig,
     GuildModerationConfig,
-    GuildMultiplersConfig,
+    GuildMultipliersConfig,
     GuildNotificationsConfig,
-    GuildOrgRolesConfig,
     GuildPrivateChannelsConfig,
-    GuildProposalConfig,
+    GuildProposalsConfig,
+    GuildRoleRequestConfig,
     GuildRulesConfig,
     GuildTicketsConfig,
 )
@@ -27,11 +27,11 @@ __all__ = (
     "GuildLevelsConfig",
     "GuildLoggingConfig",
     "GuildModerationConfig",
-    "GuildMultiplersConfig",
+    "GuildMultipliersConfig",
     "GuildNotificationsConfig",
-    "GuildOrgRolesConfig",
     "GuildPrivateChannelsConfig",
-    "GuildProposalConfig",
+    "GuildProposalsConfig",
+    "GuildRoleRequestConfig",
     "GuildRulesConfig",
     "GuildTicketsConfig",
 )
