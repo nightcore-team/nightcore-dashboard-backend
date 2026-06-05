@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import BigInteger, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -6,7 +8,7 @@ from src.infra.postgres.models.base import Base
 
 
 class GuildRulesSubRule(IdIntegerMixin, Base):
-    guild_id: Mapped[int] = mapped_column(
+    rule_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("guildrulesrule.id", ondelete="CASCADE"),
         nullable=False,
@@ -15,7 +17,7 @@ class GuildRulesSubRule(IdIntegerMixin, Base):
 
 
 class GuildRulesRule(IdIntegerMixin, Base):
-    guild_id: Mapped[int] = mapped_column(
+    chapter_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("guildruleschapter.id", ondelete="CASCADE"),
         nullable=False,
@@ -30,7 +32,7 @@ class GuildRulesRule(IdIntegerMixin, Base):
 
 
 class GuildRulesChapter(IdIntegerMixin, Base):
-    guild_id: Mapped[int] = mapped_column(
+    rules_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("guildrules.id", ondelete="CASCADE"),
         nullable=False,
@@ -45,7 +47,14 @@ class GuildRulesChapter(IdIntegerMixin, Base):
 
 
 class GuildRules(IdIntegerMixin, Base):
-    __table_args__ = (UniqueConstraint("guild_id", name="uq_guild"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "guild_id",
+            name="uq_guild",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
 
     guild_id: Mapped[int] = mapped_column(
         BigInteger,
@@ -74,3 +83,29 @@ class GuildRulesConfig(IdIntegerMixin, Base):
     rules_channel_id: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True
     )
+
+    @staticmethod
+    def normalize_from_json(config: dict[str, Any]) -> dict[str, Any]:
+        raw_rules = config.get("guild_rules")
+
+        if raw_rules is not None:
+            chapters: list[GuildRulesChapter] = []
+            for chapter_data in raw_rules.get("chapters", []):
+                rules: list[GuildRulesRule] = []
+                for rule_data in chapter_data.get("rules", []):
+                    subrules = [
+                        GuildRulesSubRule(text=sr["text"])
+                        for sr in rule_data.get("subrules", [])
+                    ]
+                    rules.append(
+                        GuildRulesRule(
+                            text=rule_data["text"], subrules=subrules
+                        )
+                    )
+                chapters.append(
+                    GuildRulesChapter(text=chapter_data["text"], rules=rules)
+                )
+
+            config["guild_rules"] = GuildRules(chapters=chapters)
+
+        return config

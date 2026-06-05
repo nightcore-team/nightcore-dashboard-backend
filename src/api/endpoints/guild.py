@@ -11,7 +11,7 @@ from ..dependencies import (
     UserIdDependency,
 )
 from ..schemas import ChannelInfoSchema, RoleInfoSchema
-from ..schemas.configuration import ConfigModelType, ConfigUpdateBody
+from ..schemas.configuration import ConfigUpdateBody
 
 router = APIRouter(prefix="/guilds", tags=["Guild Endpoints"])
 
@@ -123,8 +123,7 @@ async def get_guild_channels(
 @router.get(
     "/{guild_id}/configuration",
     status_code=status.HTTP_200_OK,
-    response_model=ConfigModelType,
-    response_model_exclude={"id", "guild_id"},
+    response_model=dict,
 )
 async def get_guild_configuration(
     guild_id: int,

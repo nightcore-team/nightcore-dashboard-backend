@@ -1,14 +1,30 @@
-from sqlalchemy import BigInteger, ForeignKey, String, UniqueConstraint
+from typing import Any
+
+from sqlalchemy import (
+    BigInteger,
+    Enum,
+    ForeignKey,
+    String,
+    UniqueConstraint,
+    and_,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.infra.postgres.models._mixins import IdIntegerMixin
 from src.infra.postgres.models.base import Base
+from src.utils._enums import OrganizationalRoleTypeEnum
 
 
 class GuildOrganizationalRole(IdIntegerMixin, Base):
     __table_args__ = (
         UniqueConstraint(
-            "guild_id", "role_id", "tag", "name", name="uq_guild_role_name_tag"
+            "guild_id",
+            "role_id",
+            "tag",
+            "name",
+            name="uq_guild_role_name_tag",
+            deferrable=True,
+            initially="DEFERRED",
         ),
     )
 
@@ -20,6 +36,15 @@ class GuildOrganizationalRole(IdIntegerMixin, Base):
     role_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     tag: Mapped[str] = mapped_column(String, nullable=False)
+    type: Mapped[OrganizationalRoleTypeEnum] = mapped_column(
+        Enum(
+            OrganizationalRoleTypeEnum,
+            native_enum=False,
+            values_callable=lambda x: [e.value for e in x],  # type: ignore
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
 
 
 class GuildRoleRequestConfig(IdIntegerMixin, Base):
@@ -30,12 +55,42 @@ class GuildRoleRequestConfig(IdIntegerMixin, Base):
         GuildOrganizationalRole,
         lazy="selectin",
         cascade="all, delete-orphan",
+        primaryjoin=lambda: and_(
+            GuildRoleRequestConfig.guild_id
+            == GuildOrganizationalRole.guild_id,
+            GuildOrganizationalRole.type == OrganizationalRoleTypeEnum.ILLEGAL,
+        ),
     )
     organizational_roles: Mapped[list[GuildOrganizationalRole]] = relationship(
         GuildOrganizationalRole,
         lazy="selectin",
         cascade="all, delete-orphan",
+        primaryjoin=lambda: and_(
+            GuildRoleRequestConfig.guild_id
+            == GuildOrganizationalRole.guild_id,
+            GuildOrganizationalRole.type == OrganizationalRoleTypeEnum.LEGAL,
+        ),
     )
     check_role_requests_channel_id: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True
     )
+
+    @staticmethod
+    def normalize_from_json(config: dict[str, Any]) -> dict[str, Any]:
+        if "organizational_roles" in config:
+            config["organizational_roles"] = [
+                GuildOrganizationalRole(
+                    **item, type=OrganizationalRoleTypeEnum.LEGAL
+                )
+                for item in config["organizational_roles"]
+            ]
+
+        if "illegal_roles" in config:
+            config["illegal_roles"] = [
+                GuildOrganizationalRole(
+                    **item, type=OrganizationalRoleTypeEnum.ILLEGAL
+                )
+                for item in config["illegal_roles"]
+            ]
+
+        return config

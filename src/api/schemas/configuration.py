@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Annotated, Any, TypedDict, Union
+from typing import Annotated, Any, TypedDict
 
 from pydantic import (
     AfterValidator,
@@ -76,7 +76,7 @@ def _validate_role_no_adm_id(v: Any, info: ValidationInfo) -> int:
     return value
 
 
-def _validate_channel_id(v: Any, info: ValidationInfo) -> int:
+def _validate_text_channel_id(v: Any, info: ValidationInfo) -> int:
     value = int(v)
     ctx = info.context
 
@@ -87,6 +87,32 @@ def _validate_channel_id(v: Any, info: ValidationInfo) -> int:
         raise ValueError(
             f"Channel {value} does not exist in guild {ctx.guild_id}"
         )
+
+    channel = ctx.channels[value]
+
+    if channel["type"] != "text":
+        raise ValueError("Value must be a text type channel")
+
+    return value
+
+
+def _validate_voice_channel_id(v: Any, info: ValidationInfo) -> int:
+    value = int(v)
+    ctx = info.context
+
+    if not isinstance(ctx, ValidationContext):
+        raise ValueError("Invalid validation context")
+
+    if value not in ctx.channels:
+        raise ValueError(
+            f"Channel {value} does not exist in guild {ctx.guild_id}"
+        )
+
+    channel = ctx.channels[value]
+
+    if channel["type"] != "voice":
+        raise ValueError("Value must be a text type channel")
+
     return value
 
 
@@ -135,11 +161,11 @@ DiscordRoleNoAdmID = Annotated[
     SnowflakeSerializer,
     AfterValidator(_validate_role_no_adm_id),
 ]
-DiscordChannelID = Annotated[
+DiscordTextChannelID = Annotated[
     int,
     SnowflakeValidator,
     SnowflakeSerializer,
-    AfterValidator(_validate_channel_id),
+    AfterValidator(_validate_text_channel_id),
 ]
 DiscordCategoryID = Annotated[
     int,
@@ -147,9 +173,17 @@ DiscordCategoryID = Annotated[
     SnowflakeSerializer,
     AfterValidator(_validate_category_id),
 ]
+DiscordVoiceChannelID = Annotated[
+    int,
+    SnowflakeValidator,
+    SnowflakeSerializer,
+    AfterValidator(_validate_voice_channel_id),
+]
 
 DiscordRoleIDList = Annotated[list[DiscordRoleID], Field(max_length=250)]
-DiscordChannelIDList = Annotated[list[DiscordChannelID], Field(max_length=500)]
+DiscordChannelIDList = Annotated[
+    list[DiscordTextChannelID], Field(max_length=500)
+]
 DiscordCategoryIDList = Annotated[
     list[DiscordCategoryID], Field(max_length=50)
 ]
@@ -181,7 +215,7 @@ class GuildOrgRolesConfigSchema(BaseGuildConfig):
     organizational_roles: list[GuildOrgRoleSchema] | None = Field(
         max_length=25, default=None
     )
-    check_role_requests_channel_id: DiscordChannelID | None = None
+    check_role_requests_channel_id: DiscordTextChannelID | None = None
 
 
 class GuildSubRuleSchema(BaseGuildConfig):
@@ -204,26 +238,26 @@ class GuildRulesSchema(BaseGuildConfig):
 
 class GuildRulesConfigSchema(BaseGuildConfig):
     guild_rules: GuildRulesSchema | None = None
-    rules_channel_id: DiscordChannelID | None = None
+    rules_channel_id: DiscordTextChannelID | None = None
 
 
 class GuildProposalConfigSchema(BaseGuildConfig):
-    create_proposal_channel_id: DiscordChannelID | None = None
+    create_proposal_channel_id: DiscordTextChannelID | None = None
 
 
 class GuildLoggingConfigSchema(BaseGuildConfig):
-    bans_log_channel_id: DiscordChannelID | None = None
-    clans_log_channel_id: DiscordChannelID | None = None
-    members_log_channel_id: DiscordChannelID | None = None
-    messages_log_channel_id: DiscordChannelID | None = None
-    voices_log_channel_id: DiscordChannelID | None = None
-    moderation_log_channel_id: DiscordChannelID | None = None
-    tickets_log_channel_id: DiscordChannelID | None = None
-    roles_log_channel_id: DiscordChannelID | None = None
-    channels_log_channel_id: DiscordChannelID | None = None
-    reactions_log_channel_id: DiscordChannelID | None = None
-    private_rooms_log_channel_id: DiscordChannelID | None = None
-    economy_log_channel_id: DiscordChannelID | None = None
+    bans_log_channel_id: DiscordTextChannelID | None = None
+    clans_log_channel_id: DiscordTextChannelID | None = None
+    members_log_channel_id: DiscordTextChannelID | None = None
+    messages_log_channel_id: DiscordTextChannelID | None = None
+    voices_log_channel_id: DiscordTextChannelID | None = None
+    moderation_log_channel_id: DiscordTextChannelID | None = None
+    tickets_log_channel_id: DiscordTextChannelID | None = None
+    roles_log_channel_id: DiscordTextChannelID | None = None
+    channels_log_channel_id: DiscordTextChannelID | None = None
+    reactions_log_channel_id: DiscordTextChannelID | None = None
+    private_rooms_log_channel_id: DiscordTextChannelID | None = None
+    economy_log_channel_id: DiscordTextChannelID | None = None
     message_log_ignoring_channels_ids: DiscordChannelIDList | None = None
 
 
@@ -240,7 +274,7 @@ class GuildEconomyConfigSchema(BaseGuildConfig):
     economy_shop_items: list[GuildEconomyShopItemSchema] | None = Field(
         max_length=25, default=None
     )
-    casino_multiplayer_channel_id: DiscordChannelID | None = None
+    casino_multiplayer_channel_id: DiscordTextChannelID | None = None
     color_drop_compensation: int = 0
 
 
@@ -255,8 +289,8 @@ class GuildBonusRoleSchema(BaseGuildConfig):
 
 
 class GuildLevelsConfigSchema(BaseGuildConfig):
-    count_messages_channel_id: DiscordChannelID | None = None
-    level_notify_channel_id: DiscordChannelID | None = None
+    count_messages_channel_id: DiscordTextChannelID | None = None
+    level_notify_channel_id: DiscordTextChannelID | None = None
     bonus_access_roles_ids: list[GuildBonusRoleSchema] | None = None
     level_roles: list[GuildLevelRoleSchema] | None = None
     count_messages_type: MessageCountTypeEnum | None = None
@@ -278,29 +312,31 @@ class GuildClanShopItemSchema(BaseGuildConfig):
 
 class GuildClansConfigSchema(BaseGuildConfig):
     create_clan_channel_category_id: DiscordCategoryID | None = None
-    clan_payday_channel_id: DiscordChannelID | None = None
-    clan_shop_channel_id: DiscordChannelID | None = None
+    clan_payday_channel_id: DiscordTextChannelID | None = None
+    clan_shop_channel_id: DiscordTextChannelID | None = None
     clan_shop_items: list[GuildClanShopItemSchema] | None = None
     clans_access_roles_ids: DiscordRoleIDList | None = None
     clan_buy_ping_roles_ids: DiscordRoleIDList | None = None
     clan_reputation_per_payday: int = 1
     base_exp_multiplier: int = 1
-    clan_improvements: list[int] | None = Field(max_length=3, min_length=3)
+    clan_improvements: list[int] | None = Field(
+        max_length=3, min_length=3, default=None
+    )
 
 
 class GuildPrivateChannelsConfigSchema(BaseGuildConfig):
-    private_rooms_create_channel_id: DiscordChannelID | None = None
+    private_rooms_create_channel_id: DiscordVoiceChannelID | None = None
 
 
 class GuildFractionRoleSchema(BaseGuildConfig):
     access_roles: DiscordRoleIDList | None = None
-    role_id: DiscordRoleID
+    role_id: DiscordRoleNoAdmID
 
 
 class GuildModerationConfigSchema(BaseGuildConfig):
     moderation_access_roles_ids: DiscordRoleIDList | None = None
     leadership_access_roles_ids: DiscordRoleIDList | None = None
-    count_moderator_messages_channel_id: DiscordChannelID | None = None
+    count_moderator_messages_channel_id: DiscordTextChannelID | None = None
     ban_access_roles_ids: DiscordRoleIDList | None = None
     unban_access_roles_ids: DiscordRoleIDList | None = None
     mute_score: float | None = 0.0
@@ -316,7 +352,7 @@ class GuildModerationConfigSchema(BaseGuildConfig):
     notification_score: float | None = 0.0
     trackable_moderation_role_id: DiscordRoleID | None = None
     ban_request_ping_role_id: DiscordRoleID | None = None
-    send_ban_request_channel_id: DiscordChannelID | None = None
+    send_ban_request_channel_id: DiscordTextChannelID | None = None
     mpmute_role_id: DiscordRoleID | None = None
     vmute_role_id: DiscordRoleID | None = None
     mute_role_id: DiscordRoleID | None = None
@@ -328,16 +364,16 @@ class GuildModerationConfigSchema(BaseGuildConfig):
 
 
 class GuildNotificationsConfigSchema(BaseGuildConfig):
-    notifications_channel_id: DiscordChannelID | None = None
-    notifications_for_moderation_channel_id: DiscordChannelID | None = None
-    notifications_from_bot_channel_id: DiscordChannelID | None = None
+    notifications_channel_id: DiscordTextChannelID | None = None
+    notifications_for_moderation_channel_id: DiscordTextChannelID | None = None
+    notifications_from_bot_channel_id: DiscordTextChannelID | None = None
 
 
 class GuildTicketsConfigSchema(BaseGuildConfig):
     tickets_count: int = 0
     new_tickets_category_id: DiscordCategoryID | None = None
     closed_tickets_category_id: DiscordCategoryID | None = None
-    create_ticket_channel_id: DiscordChannelID | None = None
+    create_ticket_channel_id: DiscordTextChannelID | None = None
     pinned_tickets_category_id: DiscordCategoryID | None = None
     create_ticket_ping_role_id: DiscordRoleID | None = None
 
@@ -345,8 +381,8 @@ class GuildTicketsConfigSchema(BaseGuildConfig):
 class GuildInfomakerConfigSchema(BaseGuildConfig):
     admins_roles_ids: DiscordRoleIDList | None = None
     leaders_roles_ids: DiscordRoleIDList | None = None
-    admins_roles_logging_channel_id: DiscordChannelID | None = None
-    leaders_roles_logging_channel_id: DiscordChannelID | None = None
+    admins_roles_logging_channel_id: DiscordTextChannelID | None = None
+    leaders_roles_logging_channel_id: DiscordTextChannelID | None = None
 
 
 class GuildForumConfigSchema(BaseGuildConfig):
@@ -371,24 +407,6 @@ class GuildAccessConfigSchema(BaseGuildConfig):
     tickets_config_access_roles_ids: DiscordRoleIDList | None = None
     infomaker_config_access_roles_ids: DiscordRoleIDList | None = None
 
-
-ConfigModelType = Union[  # noqa: UP007
-    GuildPrivateChannelsConfigSchema,
-    GuildModerationConfigSchema,
-    GuildNotificationsConfigSchema,
-    GuildTicketsConfigSchema,
-    GuildInfomakerConfigSchema,
-    GuildForumConfigSchema,
-    GuildAccessConfigSchema,
-    GuildEconomyConfigSchema,
-    GuildLevelsConfigSchema,
-    GuildClansConfigSchema,
-    GuildMultiplersConfigSchema,
-    GuildRulesConfigSchema,
-    GuildProposalConfigSchema,
-    GuildOrgRolesConfigSchema,
-    GuildLoggingConfigSchema,
-]
 
 CONFIG_SCHEMA_MODEL_MAP = {
     ConfigTypeEnum.PRIVATE_CHANNELS: GuildPrivateChannelsConfigSchema,

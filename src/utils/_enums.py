@@ -27,3 +27,8 @@ class ConfigMuteTypeEnum(Enum):
 class MessageCountTypeEnum(Enum):
     CHANNEL_ONLY = "channel_only"
     ALL = "all"
+
+
+class OrganizationalRoleTypeEnum(Enum):
+    ILLEGAL = "illegal"
+    LEGAL = "legal"

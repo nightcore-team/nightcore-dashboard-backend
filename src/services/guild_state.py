@@ -12,7 +12,6 @@ from src.api.schemas.configuration import (
 from src.domain.interfaces.guild_state_repository import IGuildStateRepository
 from src.infra.postgres.operations import (
     CONFIG_MODEL_MAP,
-    ConfigType,
     get_or_create_specified_guild_config,
 )
 from src.infra.postgres.uow import UnitOfWork
@@ -83,18 +82,27 @@ class GuildStateService:
 
     async def get_config(
         self, guild_id: int, config_type: ConfigTypeEnum
-    ) -> ConfigType:
+    ) -> dict[str, Any]:
         type_ = CONFIG_MODEL_MAP.get(config_type)
 
         if type_ is None:
             raise ValueError("Unknown config type")
 
         async with self._uow.start() as session:
-            return await get_or_create_specified_guild_config(
+            config = await get_or_create_specified_guild_config(
                 session,
                 config_type=type_,
                 guild_id=guild_id,
             )
+
+        pydantic_type = CONFIG_SCHEMA_MODEL_MAP.get(config_type)
+
+        if pydantic_type is None:
+            raise ValueError("Pydantic model not found for this config type")
+
+        return pydantic_type.model_construct(**vars(config)).model_dump(
+            mode="json"
+        )
 
     async def get_guilds(self, guild_ids: list[str]) -> list[GuildCacheEntry]:
         return await self._guild_state_repo.get_guilds(guild_ids)
@@ -117,6 +125,8 @@ class GuildStateService:
 
         dump = validated_model.model_dump(exclude_unset=True)
 
+        nomalized = type_.normalize_from_json(dump)
+
         async with self._uow.start() as session:
             config = await get_or_create_specified_guild_config(
                 session,
@@ -124,5 +134,5 @@ class GuildStateService:
                 guild_id=guild_id,
             )
 
-            for k, v in dump.items():
+            for k, v in nomalized.items():
                 setattr(config, k, v)

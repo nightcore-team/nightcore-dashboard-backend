@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import (
     ARRAY,
     BigInteger,
@@ -14,9 +16,15 @@ from src.infra.postgres.models.base import Base
 from src.utils._enums import ConfigMuteTypeEnum
 
 
-class GuildFractionRoles(IdIntegerMixin, Base):
+class GuildFractionRole(IdIntegerMixin, Base):
     __table_args__ = (
-        UniqueConstraint("guild_id", "role_id", name="uq_guild_role"),
+        UniqueConstraint(
+            "guild_id",
+            "role_id",
+            name="uq_guild_role",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
 
     guild_id: Mapped[int] = mapped_column(
@@ -118,10 +126,20 @@ class GuildModerationConfig(IdIntegerMixin, Base):  #
         nullable=True,
         default=ConfigMuteTypeEnum.TIMEOUT,
     )  #
-    fraction_roles_access_roles_ids: Mapped[list[GuildFractionRoles]] = (
+    fraction_roles_access_roles_ids: Mapped[list[GuildFractionRole]] = (
         relationship(
-            GuildFractionRoles,
+            GuildFractionRole,
             lazy="selectin",
             cascade="all, delete-orphan",
         )
     )
+
+    @staticmethod
+    def normalize_from_json(config: dict[str, Any]) -> dict[str, Any]:
+        if "fraction_roles_access_roles_ids" in config:
+            config["fraction_roles_access_roles_ids"] = [
+                GuildFractionRole(**item)
+                for item in config["fraction_roles_access_roles_ids"]
+            ]
+
+        return config

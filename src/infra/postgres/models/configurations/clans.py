@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import (
     ARRAY,
     BigInteger,
@@ -15,7 +17,13 @@ from src.infra.postgres.models.base import Base
 
 class GuildClanShopItem(IdIntegerMixin, Base):
     __table_args__ = (
-        UniqueConstraint("guild_id", "name", name="uq_guild_name"),
+        UniqueConstraint(
+            "guild_id",
+            "name",
+            name="uq_guild_name",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
 
     guild_id: Mapped[int] = mapped_column(
@@ -62,3 +70,12 @@ class GuildClansConfig(IdIntegerMixin, Base):
     clan_improvements: Mapped[list[int]] = mapped_column(
         ARRAY(Integer), nullable=False, default=list
     )
+
+    @staticmethod
+    def normalize_from_json(config: dict[str, Any]) -> dict[str, Any]:
+        if "clan_shop_items" in config:
+            config["clan_shop_items"] = [
+                GuildClanShopItem(**item) for item in config["clan_shop_items"]
+            ]
+
+        return config
