@@ -1,5 +1,4 @@
-from dataclasses import dataclass, field
-from typing import Annotated, Any, TypedDict
+from typing import Annotated, Any
 
 from pydantic import (
     AfterValidator,
@@ -8,7 +7,6 @@ from pydantic import (
     ConfigDict,
     Field,
     PlainSerializer,
-    ValidationInfo,
 )
 
 from src.utils._enums import (
@@ -16,124 +14,13 @@ from src.utils._enums import (
     ConfigTypeEnum,
     MessageCountTypeEnum,
 )
-
-
-class RoleInfo(TypedDict):
-    id: str
-    name: str
-    color: str
-    position: int
-    administrator: bool
-
-
-class ChannelInfo(TypedDict):
-    id: str
-    name: str
-    type: str
-
-
-@dataclass
-class ValidationContext:
-    guild_id: int
-    roles: dict[int, RoleInfo] = field(default_factory=dict[int, RoleInfo])
-    channels: dict[int, ChannelInfo] = field(
-        default_factory=dict[int, ChannelInfo]
-    )
-
-
-def _validate_role_id(v: Any, info: ValidationInfo) -> int:
-    value = int(v)
-    ctx = info.context
-
-    if not isinstance(ctx, ValidationContext):
-        raise ValueError("Invalid validation context")
-
-    if value not in ctx.roles:
-        raise ValueError(
-            f"Role {value} does not exist in guild {ctx.guild_id}"
-        )
-
-    return value
-
-
-def _validate_role_no_adm_id(v: Any, info: ValidationInfo) -> int:
-    value = int(v)
-    ctx = info.context
-
-    if not isinstance(ctx, ValidationContext):
-        raise ValueError("Invalid validation context")
-
-    if value not in ctx.roles:
-        raise ValueError(
-            f"Role {value} does not exist in guild {ctx.guild_id}"
-        )
-
-    role = ctx.roles[value]
-
-    if role["administrator"]:
-        raise ValueError("Cannot use role with administrator permissions")
-
-    return value
-
-
-def _validate_text_channel_id(v: Any, info: ValidationInfo) -> int:
-    value = int(v)
-    ctx = info.context
-
-    if not isinstance(ctx, ValidationContext):
-        raise ValueError("Invalid validation context")
-
-    if value not in ctx.channels:
-        raise ValueError(
-            f"Channel {value} does not exist in guild {ctx.guild_id}"
-        )
-
-    channel = ctx.channels[value]
-
-    if channel["type"] != "text":
-        raise ValueError("Value must be a text type channel")
-
-    return value
-
-
-def _validate_voice_channel_id(v: Any, info: ValidationInfo) -> int:
-    value = int(v)
-    ctx = info.context
-
-    if not isinstance(ctx, ValidationContext):
-        raise ValueError("Invalid validation context")
-
-    if value not in ctx.channels:
-        raise ValueError(
-            f"Channel {value} does not exist in guild {ctx.guild_id}"
-        )
-
-    channel = ctx.channels[value]
-
-    if channel["type"] != "voice":
-        raise ValueError("Value must be a text type channel")
-
-    return value
-
-
-def _validate_category_id(v: Any, info: ValidationInfo) -> int:
-    value = int(v)
-    ctx = info.context
-
-    if not isinstance(ctx, ValidationContext):
-        raise ValueError("Invalid validation context")
-
-    if value not in ctx.channels:
-        raise ValueError(
-            f"Category {value} does not exist in guild {ctx.guild_id}"
-        )
-
-    channel = ctx.channels[value]
-
-    if channel["type"] != "category":
-        raise ValueError("Value must be a category type channel")
-
-    return value
+from src.utils.validators import (
+    validate_category_id,
+    validate_role_id,
+    validate_role_no_adm_id,
+    validate_text_channel_id,
+    validate_voice_channel_id,
+)
 
 
 def _parse_snowflake(v: Any) -> int:
@@ -153,31 +40,31 @@ DiscordRoleID = Annotated[
     int,
     SnowflakeValidator,
     SnowflakeSerializer,
-    AfterValidator(_validate_role_id),
+    AfterValidator(validate_role_id),
 ]
 DiscordRoleNoAdmID = Annotated[
     int,
     SnowflakeValidator,
     SnowflakeSerializer,
-    AfterValidator(_validate_role_no_adm_id),
+    AfterValidator(validate_role_no_adm_id),
 ]
 DiscordTextChannelID = Annotated[
     int,
     SnowflakeValidator,
     SnowflakeSerializer,
-    AfterValidator(_validate_text_channel_id),
+    AfterValidator(validate_text_channel_id),
 ]
 DiscordCategoryID = Annotated[
     int,
     SnowflakeValidator,
     SnowflakeSerializer,
-    AfterValidator(_validate_category_id),
+    AfterValidator(validate_category_id),
 ]
 DiscordVoiceChannelID = Annotated[
     int,
     SnowflakeValidator,
     SnowflakeSerializer,
-    AfterValidator(_validate_voice_channel_id),
+    AfterValidator(validate_voice_channel_id),
 ]
 
 DiscordRoleIDList = Annotated[list[DiscordRoleID], Field(max_length=250)]

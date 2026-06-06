@@ -5,10 +5,8 @@ from typing import Any
 
 from src.api.schemas.configuration import (
     CONFIG_SCHEMA_MODEL_MAP,
-    ChannelInfo,
-    RoleInfo,
-    ValidationContext,
 )
+from src.domain.exceptions.base import LogicalError
 from src.domain.interfaces.guild_state_repository import IGuildStateRepository
 from src.infra.postgres.operations import (
     CONFIG_MODEL_MAP,
@@ -22,6 +20,11 @@ from src.infra.redis.models import (
     RoleCacheEntry,
 )
 from src.utils._enums import ConfigTypeEnum
+from src.utils.validators import (
+    ChannelInfo,
+    RoleInfo,
+    ValidationContext,
+)
 
 
 class GuildStateService:
@@ -86,7 +89,7 @@ class GuildStateService:
         type_ = CONFIG_MODEL_MAP.get(config_type)
 
         if type_ is None:
-            raise ValueError("Unknown config type")
+            raise LogicalError("Unknown config type")
 
         async with self._uow.start() as session:
             config = await get_or_create_specified_guild_config(
@@ -98,7 +101,7 @@ class GuildStateService:
         pydantic_type = CONFIG_SCHEMA_MODEL_MAP.get(config_type)
 
         if pydantic_type is None:
-            raise ValueError("Pydantic model not found for this config type")
+            raise LogicalError("Pydantic model not found for this config type")
 
         return pydantic_type.model_construct(**vars(config)).model_dump(
             mode="json"
@@ -118,7 +121,7 @@ class GuildStateService:
         pydantic_type = CONFIG_SCHEMA_MODEL_MAP.get(config_type)
 
         if pydantic_type is None:
-            raise ValueError("Pydantic model not found for this config type")
+            raise LogicalError("Pydantic model not found for this config type")
 
         context = await self._build_validation_context(guild_id)
         validated_model = pydantic_type.model_validate(data, context=context)

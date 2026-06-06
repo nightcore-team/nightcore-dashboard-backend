@@ -1,10 +1,14 @@
 """Setup module for creating and configuring the FastAPI bot instance."""
 
+from typing import cast
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.types import ExceptionHandler
 
 from src.api.endpoints import router as api_router
+from src.api.events.exceptions import EXCEPTION_HANDLERS
 from src.core._global import config
 
 from .lifespan import lifespan
@@ -24,6 +28,9 @@ def create_fastapi() -> FastAPI:
         allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
         allow_headers=["*"],
     )
+
+    for exc_type, handler in EXCEPTION_HANDLERS.items():
+        app.add_exception_handler(exc_type, cast(ExceptionHandler, handler))
 
     app.state.config = config
 
