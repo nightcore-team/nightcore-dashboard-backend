@@ -133,6 +133,9 @@ class GuildModerationConfig(IdIntegerMixin, Base):  #
             cascade="all, delete-orphan",
         )
     )
+    inactive_channel_id: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True
+    )  #
 
     @staticmethod
     def normalize_from_json(config: dict[str, Any]) -> dict[str, Any]:
