@@ -68,7 +68,9 @@ class AccessService:
     ) -> bool:
         """Check whether the user has access to a specific config in a guild."""  # noqa: E501
         if config_type == ConfigTypeEnum.ACCESS:
-            return member.administrator
+            return await self.has_administrator_access(
+                guild_id=guild_id, member=member
+            )
 
         async with self._uow.start() as session:
             return await has_guild_config_access(

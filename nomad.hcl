@@ -39,7 +39,7 @@ job "nightcore-dashboard-backend" {
           
           "traefik.http.middlewares.backend-ratelimit.ratelimit.average=2",
           "traefik.http.middlewares.backend-ratelimit.ratelimit.period=1s",
-          "traefik.http.middlewares.backend-ratelimit.ratelimit.burst=2",
+          "traefik.http.middlewares.backend-ratelimit.ratelimit.burst=8",
           "traefik.http.routers.dashboard-backend.middlewares=backend-ratelimit",
 
           "traefik.http.routers.dashboard-backend-patch.rule=Host(`api.nightcore.space`) && Method(`PATCH`)",
