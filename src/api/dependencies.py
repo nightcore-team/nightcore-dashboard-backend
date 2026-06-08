@@ -149,10 +149,15 @@ def get_access_service(
         UserGuildsRepository,
         Depends(get_ready_user_guilds_repository),
     ],
+    guild_state_repository: Annotated[
+        GuildStateRepository,
+        Depends(get_ready_guild_state_repository),
+    ],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> AccessService:
     return AccessService(
         user_guilds_repo=user_guilds_repository,  # type: ignore
+        guild_state_repo=guild_state_repository,  # type: ignore
         uow=uow,
     )
 
