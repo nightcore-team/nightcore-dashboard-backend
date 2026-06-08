@@ -43,5 +43,5 @@ class IGuildStateRepository(IBaseRedisRepository):
     ) -> list[GuildCacheEntry]: ...
 
     async def get_roles_by_ids(
-        self, role_ids: list[str]
+        self, guild_id: int, role_ids: list[str]
     ) -> list[RoleCacheEntry]: ...

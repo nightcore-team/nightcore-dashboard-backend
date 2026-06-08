@@ -29,6 +29,7 @@ class AccessService:
 
     async def has_administrator_access(
         self,
+        guild_id: int,
         member: MemberCacheEntry,
     ) -> bool:
         if not member.roles:
@@ -36,7 +37,9 @@ class AccessService:
 
         member_roles = list(map(str, member.roles))
 
-        roles = await self._guild_state_repo.get_roles_by_ids(member_roles)
+        roles = await self._guild_state_repo.get_roles_by_ids(
+            guild_id, member_roles
+        )
 
         return any(role.administrator for role in roles)
 
@@ -50,7 +53,9 @@ class AccessService:
                 session, guild_id=guild_id, roles=member.roles
             )
 
-        if await self.has_administrator_access(member=member):
+        if await self.has_administrator_access(
+            guild_id=guild_id, member=member
+        ):
             configurations.append(ConfigTypeEnum.ACCESS.value)
 
         return configurations
