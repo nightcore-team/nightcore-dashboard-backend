@@ -248,7 +248,7 @@ class GuildModerationConfigSchema(BaseGuildConfig):
         Field(max_length=25, default=None)
     )
     leader_access_rr_roles_ids: DiscordRoleIDList | None = None
-    inactive_channel_id: DiscordChannelIDList | None = None
+    inactive_channel_id: DiscordTextChannelID | None = None
 
 
 class GuildNotificationsConfigSchema(BaseGuildConfig):
