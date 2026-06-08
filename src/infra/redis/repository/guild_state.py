@@ -122,3 +122,25 @@ class GuildStateRepository(BaseRepository):
             result.append(guild)
 
         return result
+
+    async def get_roles_by_ids(
+        self, guild_id: int, role_ids: list[str]
+    ) -> list[RoleCacheEntry]:
+        """Return cached roles."""
+
+        if not role_ids:
+            return []
+
+        result: list[RoleCacheEntry] = []
+
+        raw_roles = await self.redis.hmget(self._roles_key(guild_id), role_ids)  # type: ignore
+
+        for raw_role in raw_roles:  # type: ignore
+            if raw_role is None:
+                continue
+
+            role = self._loads(raw_role, RoleCacheEntry)  # type: ignore
+
+            result.append(role)
+
+        return result
