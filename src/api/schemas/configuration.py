@@ -7,6 +7,7 @@ from pydantic import (
     ConfigDict,
     Field,
     PlainSerializer,
+    computed_field,
 )
 
 from src.utils._enums import (
@@ -277,7 +278,12 @@ class GuildForumConfigSchema(BaseGuildConfig):
     is_enabled: bool = False
     role_id: int | None = None
     channel_id: int | None = None
-    available: bool = False
+    section_id: int | None = Field(exclude=True, default=None)
+
+    @computed_field
+    @property
+    def available(self) -> bool:  # noqa: D102
+        return self.section_id is not None
 
 
 class GuildAccessConfigSchema(BaseGuildConfig):

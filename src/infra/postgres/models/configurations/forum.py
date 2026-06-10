@@ -23,7 +23,3 @@ class GuildForumConfig(IdIntegerMixin, Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
-
-    @property
-    def available(self) -> bool:  # noqa: D102
-        return self.section_id is not None
