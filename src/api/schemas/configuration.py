@@ -277,6 +277,7 @@ class GuildForumConfigSchema(BaseGuildConfig):
     is_enabled: bool = False
     role_id: int | None = None
     channel_id: int | None = None
+    available: bool
 
 
 class GuildAccessConfigSchema(BaseGuildConfig):
