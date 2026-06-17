@@ -275,7 +275,7 @@ class GuildInfomakerConfigSchema(BaseGuildConfig):
 
 
 class GuildForumConfigSchema(BaseGuildConfig):
-    is_enabled: bool = False
+    is_active: bool = False
     role_id: int | None = None
     channel_id: int | None = None
     section_id: int | None = Field(exclude=True, default=None)
