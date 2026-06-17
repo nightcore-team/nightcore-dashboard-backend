@@ -259,7 +259,6 @@ class GuildNotificationsConfigSchema(BaseGuildConfig):
 
 
 class GuildTicketsConfigSchema(BaseGuildConfig):
-    tickets_count: int = 0
     new_tickets_category_id: DiscordCategoryID | None = None
     closed_tickets_category_id: DiscordCategoryID | None = None
     create_ticket_channel_id: DiscordTextChannelID | None = None
@@ -276,8 +275,8 @@ class GuildInfomakerConfigSchema(BaseGuildConfig):
 
 class GuildForumConfigSchema(BaseGuildConfig):
     is_active: bool = False
-    role_id: int | None = None
-    channel_id: int | None = None
+    role_id: DiscordRoleID | None = None
+    channel_id: DiscordTextChannelID | None = None
     section_id: int | None = Field(exclude=True, default=None)
 
     @computed_field
